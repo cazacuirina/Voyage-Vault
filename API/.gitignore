@@ -1,0 +1,9 @@
+# Fișiere de mediu
+.env
+
+# Module Node.js
+node_modules/
+
+# Foldere cu chei de autentificare
+dbcredentials/
+googleauthcredentials/

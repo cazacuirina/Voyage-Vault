@@ -57,17 +57,21 @@ export default {
       favoriteList: [],
       currentStep: 0,
       loadingFavorites: true,
+      token:"",
     };
   },
   mounted() {
-    this.getFavoriteList()
+    this.token = localStorage.getItem('token');
+    if(this.token){
+      this.getFavoriteList()
+    }
   },
   methods: {
     async getFavoriteList() {
       try {
         const response = await axios.get('http://localhost:3001/user/favorites', {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${this.token}`,
           },
         })  // get user favorite destinations
 

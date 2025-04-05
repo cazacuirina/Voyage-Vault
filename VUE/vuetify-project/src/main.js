@@ -19,7 +19,9 @@ registerPlugins(app)
 
 app.mount('#app')
 
+// Delete localstorage items before closing the window (log out user)
 window.addEventListener('beforeunload', () => {
-    localStorage.removeItem('token')
+    localStorage.removeItem('token')  
     localStorage.removeItem('userName')
+    localStorage.removeItem('userEmail')
 })
