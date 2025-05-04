@@ -25,44 +25,57 @@
                             />
   
                             <v-text-field
-                              v-model="password"
-                              id="password"
-                              :type="showPassword ? 'text' : 'password'"
-                              label="Password"
-                              append-icon="mdi-eye"
-                              @click:append="toggleShowPassword"
-                              name="password"
-                              :rules="passwordRules"
-                              prepend-icon="lock"
-                              type="password"
-                              color="brown lighten-2"
-                            />
+                            v-if="!resetMode"
+                            v-model="password"
+                            id="password"
+                            :type="showPassword ? 'text' : 'password'"
+                            label="Password"
+                            append-icon="mdi-eye"
+                            @click:append="toggleShowPassword"
+                            name="password"
+                            :rules="passwordRules"
+                            prepend-icon="lock"
+                            color="brown lighten-2"
+                          />
+
+                          <v-text-field
+                            v-if="resetMode"
+                            v-model="newPassword"
+                            label="New Password"
+                            :type="showPassword ? 'text' : 'password'"
+                            :rules="passwordRules"
+                            prepend-icon="lock"
+                            color="brown lighten-2"
+                          />
+
+                          <v-text-field
+                            v-if="resetMode"
+                            v-model="confirmPassword"
+                            label="Confirm Password"
+                            :type="showPassword ? 'text' : 'password'"
+                            :rules="confirmPasswordRules"
+                            prepend-icon="lock"
+                            color="brown lighten-2"
+                          />
                             <div v-if="error" class="error-message">{{ errorMessage }}</div>
                           </v-form>
                         </v-card-text>
                         <div class="text-center mt-0">
-                          <v-btn @click="login" rounded color="brown lighten-2" dark>
-                            SIGN IN
-                          </v-btn>
-                        </div>
-                        <div class="text-center mt-3 mb-6">
-  <a @click.prevent="loginWithGoogle" class="google-signin-link">
-    Sign in with Google
-  </a>
-</div>
-                      <!-- <div class="text-center mt-0">
-                        <span class="sign-in-text">Sign in with Google</span>
-                        <v-btn 
-                          @click="loginWithGoogle" 
-                          class="google-icon-btn" 
-                          icon 
-                          style="margin-top: 0;"
-                          color="brown lighten-2">
-                          <v-icon>mdi-google</v-icon>
+                          <v-btn @click="resetMode ? resetPassword() : login()" rounded color="brown lighten-2" dark>
+                          {{ resetMode ? 'RESET' : 'SIGN IN' }}
                         </v-btn>
-                      </div> -->
-
-
+                        </div>
+                        
+                        <div class="text-center mt-3 mb-6 d-flex justify-center align-center">
+                        <a @click.prevent="loginWithGoogle" class="google-signin-link mr-2">
+                          Sign in with Google
+                        </a>
+                        <span class="mx-2">|</span>
+                        <a @click.prevent="toggleResetMode" class="google-signin-link ml-2">
+                          Reset Password
+                        </a>
+                      </div>
+                     
                       </v-col>
                       <v-col cols="12" md="4" class="brown-background">
                         <v-card-text class="white--text mt-12">
@@ -161,6 +174,9 @@
         name:"",
         email: "",
         password: "",
+        newPassword: "",
+        confirmPassword: "",
+        resetMode: false,
         showPassword: false,
         nameRules: [
         v => !!v || "Name is required",
@@ -177,7 +193,7 @@
     }),
     computed: {
     isAuthenticated() {
-      return !!localStorage.getItem('token'); // Verifică dacă utilizatorul este autentificat
+      return !!localStorage.getItem('token'); 
     }
   },
     methods: {
@@ -191,64 +207,88 @@
       toggleShowPassword() {
         this.showPassword = !this.showPassword
       },
-      async register() {
+      toggleResetMode() {
+      this.resetMode = !this.resetMode;
+      this.password = "";
+      this.newPassword = "";
+      this.confirmPassword = "";
+      this.error = false;
+    },
+    async resetPassword() {
+      
+      console.log(this.newPassword, this.confirmPassword)
+      if (this.newPassword !== this.confirmPassword) {
+        this.error = true;
+        this.errorMessage = "Passwords do not match.";
+        return;
+      }
+
       try {
-        await this.$refs.form.validate()  
-        // console.log(this.valid)
+        const response = await this.axios.put("http://localhost:3001/auth/reset-password", {
+          email: this.email,
+          newPassword: this.newPassword,
+        });
 
-        if (this.valid) {
-          this.error = false
-          
-          const formData = new FormData();
-          formData.append('name', this.name)
-          formData.append('email', this.email)
-          formData.append('password', this.password)
-        
-          
-          const response = await axios.post('http://localhost:3001/register', {
-            name: this.name,
-            email: this.email,
-            password: this.password
-          })
-
-          if (response.data.token) {   // if successfull registration - sign user in (token)
-            localStorage.setItem('token', response.data.token)
-            localStorage.setItem('userName', response.data.userName)
-            localStorage.setItem('userEmail', response.data.userEmail)
-
-            console.log(response.data)
-            
-            console.log("Registration successful with", this.email, this.password)
-            console.log("Token stored:", response.data.token)
-            this.$router.push({ name: 'Home' })
-          } else {
-            console.error("Registration failed. No token received.")
-            this.error = true  // backend post error
-          }
-
-        } else {
-          this.error = true
-          this.errorMessage = "Please input valid data"  // frontend invalid form 
-          console.log("Please input valid data")
-        }
-      } catch (error) {
-        console.error("Error during registration:", error.message, error.response.data.error)
-        this.error = true
-        this.errorMessage = error.response.data.error
+        this.error = false;
+        this.resetMode = false;
+        alert("Password reset successful. You can now sign in.");
+      } catch (err) {
+        this.error = true;
+        this.errorMessage = err.response?.data?.error || "Reset failed";
       }
     },
+    async resetPassword() {
+  try {
+    await this.$refs.form.validate();
+
+    if (this.valid) {
+      this.error = false;
+
+      // Verifică dacă parolele sunt diferite și valide
+      if (this.newPassword !== this.confirmPassword) {
+        this.error = true;
+        this.errorMessage = "Passwords do not match.";
+        return;
+      }
+
+      const response = await axios.put("http://localhost:3001/auth/reset-password", {
+        email: this.email,
+        newPassword: this.newPassword
+      });
+
+      if (response.status === 200) {
+        alert("Password reset successful. You can now sign in.");
+        this.resetMode = false;
+        this.newPassword = "";
+        this.confirmPassword = "";
+        this.password = ""; // în caz că ai și un câmp de login activ
+        this.error = false;
+      } else {
+        this.error = true;
+        this.errorMessage = "Unexpected error. Try again.";
+      }
+    } else {
+      this.error = true;
+      this.errorMessage = "Please enter valid data.";
+    }
+  } catch (error) {
+    console.error("Error during password reset:", error.message, error.response?.data?.error);
+    this.error = true;
+    this.errorMessage = error.response?.data?.error || "Reset failed. Try again.";
+  }
+},
     async login() {
       try {
-        await this.$refs.form.validate()  // check valid form fields
+        await this.$refs.form.validate() 
         if (this.valid) {
           this.error = false
         
-          const response = await axios.post('http://localhost:3001/login', {
+          const response = await axios.post('http://localhost:3001/auth/login', {
             email: this.email,
             password: this.password,
           })
 
-          if (response.data.token) {   // if successfull login - save token
+          if (response.data.token) {   
             localStorage.setItem('token', response.data.token)
             localStorage.setItem('userName', response.data.userName)
             localStorage.setItem('userEmail', response.data.userEmail)
@@ -257,12 +297,12 @@
             console.log("Token stored:", response.data.token)
             this.$router.push({ name: 'Home' })
           } else {
-            console.error("Login failed. No token received.")  // backend post error
+            console.error("Login failed. No token received.")  
             this.error = true
           }
         } else {
           this.error = true
-          this.errorMessage = "Please input valid data"    // frontend invalid form 
+          this.errorMessage = "Please input valid data"   
           console.log("Please input valid data")
         }
       } catch (error) {
@@ -337,24 +377,16 @@
 }
 
 
-/* .google-icon-btn {
-  border-radius: 50%; 
-  background-color: white; 
-  width: 1em; 
-  height:1em;
-  box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.15);
-} */
-
 .google-signin-link {
   font-size: 1em;
-  color: #683312; /* Culoarea folosită pentru text */
+  color: #683312; 
   cursor: pointer;
-  text-decoration: underline; /* Sublinează linkul pentru claritate */
-  margin-top: 0; /* Elimină orice spațiu suplimentar de sus */
+  text-decoration: underline; 
+  margin-top: 0;
 }
 
 .google-signin-link:hover {
-  color: #a5492a; /* Culoare mai închisă la hover */
+  color: #a5492a;
 }
 
   </style>

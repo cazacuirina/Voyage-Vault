@@ -14,7 +14,6 @@
   import axios from "axios";
 
   export default {
-    //name: "SubscriptionSuccess",
     name: "SubscriptionSuccess",
     data() {
     return {
@@ -34,12 +33,6 @@
     }
     },
     computed: {
-      // authorName() {
-      //   return this.$route.query.authorName || "the author";
-      // },
-      // userEmail() {
-      //   return this.$route.query.userEmail || "your account";
-      // }
       authorName() {
         return decodeURIComponent(this.$route.query.authorName || "the author");
       },
@@ -55,15 +48,8 @@
       try {
         console.log(this.authorName, this.userName)
         const response = await axios.put(
-          `http://localhost:3001/users/${this.authorName}/subscribe`,
-          {
-            //authorName: this.authorName,
-
-            //userEmail: this.userEmail,
-           // userName: this.userName,
-            //price: this.$route.query.price || 0, // Opțional, dacă vrei să salvezi prețul
-            //type: "subscription",
-          },
+          `http://localhost:3001/user/${this.authorName}/subscribe`,
+          {},
           {
             headers: { Authorization: `Bearer ${this.token}` },
           }
@@ -77,12 +63,9 @@
     async savePayment() {
     try {
       const paymentData = {
-        //userName: this.userName,
-        //userEmail: this.userEmail,
         authorName: this.authorName,
         amount: this.$route.query.price || 0, 
         isSubscription: true,
-        //date: this.generateCustomTimestamp(),
       };
 
       await axios.post("http://localhost:3001/subscriber/payment", paymentData, {
@@ -94,17 +77,6 @@
       console.error("Error saving subscription:", error);
     }
   },
-//   generateCustomTimestamp() {
-//     const customDate = new Date();  // Data curentă
-//     const seconds = Math.floor(customDate.getTime() / 1000);  // Secunde
-//     const nanoseconds = (customDate.getMilliseconds() * 1000000);  // Nanosecunde
-
-//     return {
-//       _seconds: seconds,
-//       _nanoseconds: nanoseconds,
-//     };
-// }
-
     }
   };
   </script>

@@ -37,7 +37,7 @@
     </v-col>
   </v-row>
 
-  <v-container style="height: 400px;" v-if="loading">
+  <v-container class="loading-container" v-if="loading">
     <v-row
       class="fill-height"
       align-content="center"
@@ -56,15 +56,11 @@
   </v-container>
 
   <AuthorProfile v-if="selectedAuthor" :authorName="selectedAuthor" />
-        <!-- @clearFilter="clearAuthorFilter" -->
 
     <v-row class="post-container">
       <v-col v-for="post in filteredPosts" :key="post.id" cols="12" md="6" lg="4">
         <v-card class="post-card">
-          <!-- <router-link :to="{ name: 'PostDetails', params: { postTitle: post.title } }"
-          @click.native.prevent="checkPostAccess(post)">
-            <v-card-title>{{ post.title }}</v-card-title>
-          </router-link> -->
+          
           <v-card-title 
             class="clickable" 
             @click="checkPostAccess(post)">
@@ -79,15 +75,10 @@
         
           <v-card-actions>
             <v-spacer></v-spacer>
-            <!-- "Buy" button for Premium Posts if user is not the author and has no subscription -->
-            <!-- <v-btn
-              v-if="post.isPremium && !isUserSubscribed && !isCurrentUserAuthor(post)"
-              rounded="xl"
-              @click="openBuyDialog(post)">Buy Post</v-btn> -->
+          
               <v-chip v-if="post.isPremium && !isCurrentUserAuthor(post)"
                     color="orange" class="ma-2" label>
                     <v-icon left>mdi-star</v-icon> Premium
-              <!-- <v-icon left>mdi-lock</v-icon> Premium -->
             </v-chip>
 
             <v-btn rounded="xl" v-if="isCurrentUserAuthor(post)" @click="openEditDialog(post)">
@@ -110,7 +101,6 @@
       Login before you interact with a post!
     </v-snackbar>
 
-    <!-- Dialog to ask Buy or Subscribe -->
   <v-dialog v-model="isBuyDialogActive" max-width="400px">
     <v-card>
       <v-card-title class="headline">Premium Content</v-card-title>
@@ -119,7 +109,6 @@
       </v-card-text>
       <v-card-actions>
         <v-btn color="primary" @click="buyPost">Buy Post</v-btn>
-        <!-- <v-btn color="secondary" @click="subscribeToAuthor">Subscribe</v-btn> -->
         <v-btn @click="isBuyDialogActive = false">Cancel</v-btn>
       </v-card-actions>
     </v-card>
@@ -185,18 +174,16 @@ data() {
     showDeleteConfirmation: false,
     postToDelete: null,
     isEditDialogActive: false,
-    isBuyDialogActive: false, // Control the Buy dialog visibility
-    //isUserSubscribed: false,
+    isBuyDialogActive: false, 
     buyPostId: null,
     buyPostTitle: null,
     buyPostPrice: null,
     buyPostAuthor: null,
   }
 },
-computed: { // computed propr derived from data phase (automatically reevaluated when propr changes - reactive)
+computed: { 
   isCurrentUserAuthor() {
     return (post) => {
-      //const userName = localStorage.getItem('userName')
       return post.author === this.userName
     }
   },
@@ -210,14 +197,13 @@ computed: { // computed propr derived from data phase (automatically reevaluated
   },
   uniqueCountries() {
   const allCountries = this.posts.map(post => post.country)
-  const uniqueCountries = [...new Set(allCountries)] // no duplicates
+  const uniqueCountries = [...new Set(allCountries)] 
   return ['All destinations', ...uniqueCountries]
 },
 filteredPosts() {
   if (this.selectedAuthor) {
-      return this.posts.filter((post) => post.author === this.selectedAuthor)  // only selected author's posts
+      return this.posts.filter((post) => post.author === this.selectedAuthor)  
   }
-  // console.log(this.sortBy)
 
   const sortedPosts = [...this.posts]
 
@@ -225,22 +211,21 @@ filteredPosts() {
     if (this.sortBy === 'Date') {
       const dateA = this.extractDateFromTimestamp(a.date)
       const dateB = this.extractDateFromTimestamp(b.date)
-      return this.sortDesc ? dateB - dateA : dateA - dateB   // sort by date
+      return this.sortDesc ? dateB - dateA : dateA - dateB  
     } else if (this.sortBy === 'Likes') {
       const likesA = a.likes ?? 0;
       const likesB = b.likes ?? 0;
       return this.sortDesc ? likesB - likesA : likesA - likesB;
-      // return this.sortDesc ? b.likes - a.likes : a.likes - b.likes  // sort by likes
+  
     }else if (this.sortBy === 'Rating') {
       const ratingA = a.rating ?? 0;
       const ratingB = b.rating ?? 0;
       return this.sortDesc ? ratingB - ratingA : ratingA - ratingB;
-      // return this.sortDesc ? b.rating - a.rating : a.rating - b.rating; // sort by rating
+    
     }
     return 0
   })
 
-  // select posts with specified destination
   return this.selectedCountry && this.selectedCountry !== 'All destinations'
     ? sortedPosts.filter(post => post.country === this.selectedCountry)
     : sortedPosts.slice((this.currentPage - 1) * this.itemsPerPage, this.currentPage * this.itemsPerPage)
@@ -248,35 +233,41 @@ filteredPosts() {
 
 },
 mounted() {
-  window.addEventListener('popstate', this.handlePopstate) // triggered: forward/back - change browser history state
+  window.addEventListener('popstate', this.handlePopstate) 
   this.userName = localStorage.getItem('userName');
   this.userEmail = localStorage.getItem('userEmail');
   this.token = localStorage.getItem('token');
-  this.startLoadingProgress()  // progress bar
-  this.getAllPosts()           // get all posts
-  //this.favoritePosts()         // like user's favorite posts
+  this.startLoadingProgress()  
+  this.getAllPosts()        
 },
 methods: {
   handlePopstate(event) {
     if (event.state) {
-      this.selectedAuthor = event.state.selectedAuthor || null // no author selected 
-      this.currentPage = event.state.currentPage || 1 // back 
+      this.selectedAuthor = event.state.selectedAuthor || null  
+      this.currentPage = event.state.currentPage || 1 
       this.filterByAuthor()
     }
   },
 
   async checkPostAccess(post) {
     try {
+      if (post.isPremium && !this.token) {
+      this.showLoginNotification = true;
+      this.loginMessage = 'Login before you can view this premium post!';
+      setTimeout(() => {
+        this.showLoginNotification = false;
+      }, 3000);
+      return;
+    }
       const hasAccess = await this.verifyPostAccess(post);
       console.log(post)
       console.log(hasAccess)
-      //const hasAccess = true;
-      //console.log("HI")
+     
       if (hasAccess) {
         this.$router.push({ name: 'PostDetails', params: { postTitle: post.title } });
       } else {
         this.openBuyDialog(post);
-        //this.$toast.error("You don't have access to this premium post!");
+       
       }
     } catch (error) {
       console.error("Error verifying post access:", error);
@@ -287,7 +278,7 @@ methods: {
     if(!post.isPremium || (post.author === this.userName)){
       return true
     }
-    //console.log(post.boughtBy) //asa arata boughtBy: Array [ "titi" ] dar nu iese verificarea in if
+   
     if (post.boughtBy && post.boughtBy.includes(this.userName)) { 
       console.log("DA")
         return true;
@@ -310,10 +301,8 @@ methods: {
 
   openBuyDialog(post) {
     console.log(post)
-
-    //const token = localStorage.getItem('token')
     
-    if (!this.token) {   // warn user to login before interacting with posts
+    if (!this.token) {   
       console.error('User is not authenticated. Unable to buy post.') 
       this.showLoginNotification = true
       setTimeout(() => {
@@ -322,9 +311,9 @@ methods: {
       return
     }
 
-    this.buyPostId = post.id; // Store the post ID
+    this.buyPostId = post.id; 
     this.buyPostTitle = post.title;
-    this.buyPostPrice = post.price; // Store the post price
+    this.buyPostPrice = post.price; 
     this.buyPostAuthor = post.author;
     this.isBuyDialogActive = true;
     },
@@ -334,9 +323,8 @@ methods: {
     async buyPost() {
       try {
 
-        // Make a request to the backend to create a Stripe session
         const response = await axios.post(
-          "http://localhost:3001/stripe/create-post-checkout-session", // Backend endpoint
+          "http://localhost:3001/stripe/create-post-checkout-session", 
           {
             postId: this.buyPostId,
             postTitle: this.buyPostTitle,
@@ -345,16 +333,13 @@ methods: {
           },
           {
             headers: {
-              Authorization: `Bearer ${this.token}`, // Include the token from localStorage
+              Authorization: `Bearer ${this.token}`, 
             },
           }
         );
 
-        // Close the dialog
         this.isBuyDialogActive = false;
 
-      
-        // Redirect to Stripe's checkout page
        window.location.href = response.data.url;
 
        console.log()
@@ -369,26 +354,23 @@ methods: {
 
     async payPost() {
   try {
-    // Send request to the backend to create a Stripe checkout session for the post payment
+   
     const response = await axios.post(
       "http://localhost:3001/stripe/create-post-checkout-session",
       {
-        postId: this.postId,  // Send the post's ID (can be from the post you're buying)
-        price: this.postPrice, // The price for the post (stored in your post data)
-        authorName: this.postAuthor, // The author's name (for reference)
+        postId: this.postId,  
+        price: this.postPrice, 
+        authorName: this.postAuthor, 
       },
       {
-        headers: { Authorization: `Bearer ${this.token}` }, // Add Authorization header if needed
+        headers: { Authorization: `Bearer ${this.token}` }, 
       }
     );
 
-    // Close the dialog for payment
     this.showPaymentModal = false;
 
-    // Redirect to the Stripe checkout page
     window.location.href = response.data.url;
 
-    // Optionally, save user details in localStorage after successful payment
     localStorage.setItem("userEmail", this.userEmail);
     localStorage.setItem("userName", this.userName);
     localStorage.setItem("token", this.token);
@@ -404,13 +386,10 @@ methods: {
     const currentState = {
       selectedAuthor: this.selectedAuthor,
       currentPage: this.currentPage,
-    } // before filtering posts, save current state to get back to it
-    window.history.pushState(currentState, null, null) // state, + pageName, URL (same as before)
+    }
+    window.history.pushState(currentState, null, null) 
   },
-  // clearAuthorFilter() {
-  //     this.selectedAuthor = null; // Resetare filtrare
-  //   },
-  startLoadingProgress() {   // progress bar start loading - wait for posts to be retrieved
+  startLoadingProgress() {  
     this.loadingInterval = setInterval(() => {
       if (this.loadingProgress === 100) {
         this.stopLoadingProgress()
@@ -427,12 +406,12 @@ methods: {
 
   async getAllPosts() {
     try {
-      const response = await axios.get('http://localhost:3001/posts')
+      const response = await axios.get('http://localhost:3001/post/posts')
       this.posts = response.data
       if(this.token){
-       await this.favoritePosts()     // color like button after loading posts 
+       await this.favoritePosts()    
       }
-      this.stopLoadingProgress()     // stop progress bar when all posts are loaded
+      this.stopLoadingProgress()     
       console.log(response)
     } catch (error) {
       console.error('Error fetching posts:', error)
@@ -444,12 +423,12 @@ methods: {
           headers: {
             Authorization: `Bearer ${this.token}`,
           },
-        })   // get user favorite destinations
+        })  
       
         const favoriteList = response.data.travelList || []
         console.log(favoriteList)
         this.posts.forEach(post => {
-          post.liked = favoriteList.some(favorite => favorite.postId === post.id)  // color like button red for favorite posts
+          post.liked = favoriteList.some(favorite => favorite.postId === post.id)  
           console.log(post.liked)
         })
 
@@ -458,17 +437,33 @@ methods: {
       }
   },
 
-  openEditDialog(post) {
-    this.$refs.postform.openEditForm(post)  // activate dialog window for editing post
-    this.isEditDialogActive = true
+  async openEditDialog(post) {
+    try {
+    this.$refs.postform.openEditForm({ ...post, images: [] });
+
+    const response = await axios.get(`http://localhost:3001/post/${post.id}/images`, {
+      headers: {
+        'Cache-Control': 'no-cache',
+      },
+    });
+
+    if (response.data.images && response.data.images.length > 0) {
+      const base64Images = response.data.images.map(image => image.base64);
+      
+      this.$refs.postform.setImages(base64Images);
+    }
+
+    this.isEditDialogActive = true;
+
+  } catch (error) {
+    console.error("Error loading post images:", error);
+  }
   },
 
   async likePost(postId) {
   try {
-    // const token = localStorage.getItem('token')
-    // const userName = localStorage.getItem('userName')
-    
-    if (!this.token) {   // warn user to login before interacting with posts
+   
+    if (!this.token) {  
       console.error('User is not authenticated. Unable to like post.') 
       this.showLoginNotification = true
       setTimeout(() => {
@@ -476,16 +471,15 @@ methods: {
       }, 3000)
       return
     }
-    //console.log(token, userName)
-
+   
     const config = {
       headers: {
         Authorization: `Bearer ${this.token}`,
       },
     }
-    const response = await axios.put(`http://localhost:3001/post/${postId}/like`, null, config)  // update post in db
+    const response = await axios.put(`http://localhost:3001/post/${postId}/like`, null, config)  
 
-    const postIndex = this.posts.findIndex(post => post.id === postId)  // update like btn in frontend
+    const postIndex = this.posts.findIndex(post => post.id === postId)  
     if (postIndex !== -1) {
       this.posts[postIndex].likes++
       this.posts[postIndex].liked=true
@@ -495,39 +489,39 @@ methods: {
   }
 },
 
-async deletePost(postId) {  // require user confirmation to delete post
-  this.postToDelete = this.posts.find(post => post.id === postId)   // find post to be deleted
+async deletePost(postId) { 
+  this.postToDelete = this.posts.find(post => post.id === postId)   
   this.showDeleteConfirmation = true
 },
 cancelDelete() {
-  this.showDeleteConfirmation = false  // no post to be deleted
+  this.showDeleteConfirmation = false  
   this.postToDelete = null
 },
 async confirmDelete() {
   this.showDeleteConfirmation = false
   const postId = this.postToDelete.id   
     try {
-      //const token = localStorage.getItem('token')
+     
       const config = {
         headers: {
           Authorization: `Bearer ${this.token}`,
         },
       }
-      await axios.delete(`http://localhost:3001/post/${postId}`, config)  // delete post from db
+      await axios.delete(`http://localhost:3001/post/${postId}`, config)  
 
-      this.posts = this.posts.filter(post => post.id !== postId)    // delete post from list
+      this.posts = this.posts.filter(post => post.id !== postId)    
     } catch (error) {
       console.error('Error deleting post:', error)
     }
   },
 
   addNewPostToList(newPost) {
-    this.posts.unshift(newPost)  // add new post at the beginning of the list
+    this.posts.unshift(newPost)  
   },
   updatePost(updatedPost) {
-    const index = this.posts.findIndex(post => post.id === updatedPost.id)  // find edited post
+    const index = this.posts.findIndex(post => post.id === updatedPost.id) 
     if (index !== -1) {
-      this.posts[index] = updatedPost   // update post in list
+      this.posts[index] = updatedPost  
     }
   },
 
@@ -536,18 +530,18 @@ async confirmDelete() {
   },
   filterByCountry() {
     if (this.selectedCountry && this.selectedCountry !== 'Toate postările') {
-    this.currentPage = 1 // reset page number after applying filter
+    this.currentPage = 1
     }
   },
   toggleSortDirection() {
     this.sortDesc = !this.sortDesc
   },
-  extractSummary(description) {  // first 3 sentences
+  extractSummary(description) { 
     const sentences = description.split(/[.!?;]/)
     const firstTwoSentences = sentences.slice(0, 2).join('.') +"..." 
     return firstTwoSentences
   },
-  extractDateFromTimestamp(timestamp) {   // timestamp format db - post date
+  extractDateFromTimestamp(timestamp) {  
     const seconds = timestamp._seconds || 0
     const nanoseconds = timestamp._nanoseconds || 0
     return new Date(seconds * 1000 + nanoseconds / 1000000)
@@ -606,7 +600,7 @@ transform: scale(1.02);
 }
 .clickable {
   cursor: pointer;
-  color: #66381b; /* Culoare link */
+  color: #66381b; 
   text-decoration: underline;
 }
 .clickable:hover {
@@ -661,6 +655,9 @@ background-color: #8f6e3a;
 }
 .sort-controls v-icon {
 font-size: 24px; 
+}
+.loading-container{
+  height: 400px;
 }
 
 </style>

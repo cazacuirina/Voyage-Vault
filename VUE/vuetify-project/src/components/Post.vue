@@ -36,7 +36,6 @@
 
             <div class="premium-section d-flex align-center">
 
-              <!-- Switch-ul pentru postările premium (afișat doar pentru utilizatorii premium) -->
               <v-switch
                 v-if="isPremiumUser"
                 v-model="post.isPremium"
@@ -45,7 +44,6 @@
                 color="blue"
               />
 
-              <!-- Inputul pentru preț (vizibil doar dacă este premium) -->
               <v-text-field
                 v-if="post.isPremium"
                 v-model="post.price"
@@ -53,23 +51,20 @@
                 type="number"
                 min="1"
                 max="5"
-                class="ml-3"
-                style="max-width: 100px;"
+                class="price-input ml-3"
               />
             </div>
 
-<!-- Inputul de fișiere (ascuns) -->
               <v-file-input
                 label="Uploaded Images"
                 multiple
                 accept="image/*"
                 :rules="[imageUploadRules]"
-                style="display: none;"
+                class="hidden-input"
                 ref="fileInput"
                 @change="handleImageUpload"
               />
 
-              <!-- Butonul pentru a adăuga imagini -->
               <v-btn
                 icon
                 class="add-image-button mr-2"
@@ -79,11 +74,14 @@
                 <v-icon color="white">mdi-camera</v-icon>
               </v-btn>
 
-            <div v-if="post.images.length">
+            <div v-if="post.images && post.images.filter(img => !!img && img.trim() !== '').length">
               <p>Images:</p>
               <v-row>
                 <v-col v-for="(image, index) in post.images" :key="index">
                   <v-img :src="image" class="image-preview" />
+                  <v-btn icon small color="red" @click="removeImage(index)">
+                    <v-icon>mdi-delete</v-icon>
+                  </v-btn>
                 </v-col>
               </v-row>
             </div>
@@ -156,9 +154,9 @@ export default {
       return [
     (v) => {
       if (v && v.length <= 3) {
-        return true;  // Valid, less than or equal to 3 images
+        return true;  
       }
-      return 'Upload max 3 images';  // Error message if more than 3 images
+      return 'Upload max 3 images';  
     }
   ]
     },
@@ -173,13 +171,21 @@ export default {
   methods: {
     async getIsPremium() {
     try {
-      const response = await axios.get(`http://localhost:3001/author/${this.userName}/followers`);
+      const response = await axios.get(`http://localhost:3001/user/${this.userName}/followers`);
       if(response.data.followers>=1000) {
         this.isPremiumUser=true
       }
     } catch (error) {
       console.error("Error fetching followers count:", error);
     }
+  },
+
+  setImages(images) {
+  this.post.images = images;
+},
+
+  removeImage(index) {
+    this.post.images.splice(index, 1);
   },
 
     triggerFileInput() {
@@ -205,7 +211,6 @@ export default {
             let width = image.width;
             let height = image.height;
 
-            // Ajustează dimensiunile imaginii pentru a se încadra în limitele maxime
             const maxWidth = 300;
             const maxHeight = 300;
             if (width > maxWidth || height > maxHeight) {
@@ -218,27 +223,25 @@ export default {
               }
             }
 
-            // Setează dimensiunile canvas-ului și desenează imaginea redimensionată
             canvas.width = width;
             canvas.height = height;
             ctx.drawImage(image, 0, 0, width, height);
 
-            // Convertim imaginea redimensionată la base64
-            const resizedBase64 = canvas.toDataURL('image/jpeg', 0.7); // Comprimare la 70%
-            resolve(resizedBase64);  // Returnează base64-ul imaginii redimensionate
+           
+            const resizedBase64 = canvas.toDataURL('image/jpeg', 0.7); 
+            resolve(resizedBase64); 
           };
 
           image.onerror = (error) => reject(new Error("Eroare la încărcarea imaginii: " + error.message));
         };
-        reader.onerror = reject;  // Gestionează erorile citirii fișierului
-        reader.readAsDataURL(file);  // Citește fișierul ca Data URL
+        reader.onerror = reject;  
+        reader.readAsDataURL(file); 
       });
     });
 
-    // Așteaptă ca toate fișierele să fie procesate și adăugate
     Promise.all(promises)
       .then(base64Images => {
-        this.post.images.push(...base64Images);  // Adaugă toate imaginile procesate în array
+        this.post.images.push(...base64Images); 
       })
       .catch(error => {
         console.error("Eroare la procesarea fișierelor:", error);
@@ -247,23 +250,17 @@ export default {
     alert('You can only upload up to 3 images in total.');
   }
 
-  event.target.value = '';  // Resetează input-ul de fișiere
+  event.target.value = '';  
 },
 
     openEditForm(post) {
-      this.post = { ...post }  // populate from fields with post data to edit
+      this.post = { ...post }  
+      console.log(post)
       this.isActive = true
       this.isEditing = true
     },
 
     async submit() {
-      //console.log(this.post.images.length, "LUNG")
-  // if (!this.post.images || this.post.images.length === 0) {
-  //   console.warn('No images selected to upload.');
-  //   return;
-  // }else{
-  //   // console.log(this.post.images.length, "LUNG")
-  // }
       try {
         await this.$refs.form.validate()  
         if (this.valid) {
@@ -272,10 +269,6 @@ export default {
           country: this.post.country,
           city: this.post.city,
           description: this.post.description,
-          // isPremium: this.post.isPremium,
-          // price: this.post.price,
-          // likes: 0,
-          // rating: 0,
           author: localStorage.getItem("userName"),
           date: this.generateCustomTimestamp(),
           images: [], 
@@ -288,40 +281,32 @@ export default {
         if (this.post.images.length > 0) {
         postData.images = this.post.images.map(image => 
         image.replace(/^data:image\/\w+;base64,/, "")); 
-        console.log(postData.images.length)// Direct adăugăm imaginile
+        console.log("LUNG", postData.images.length)    
+        console.log(postData.images) //am luat ce e aici si am bagat in base64 decoder online si e ok!
       } else {
         console.warn("No images to send.");
       }
       
-
-
-        //CAMPURI SI POZE????????
-        //daca nu am poze sa nu dea fail
-          if(this.isEditing){   // edit mode on
-            const response = await axios.put(`http://localhost:3001/post/${this.post.id}`, this.post, {
+          if(this.isEditing){   
+            const response = await axios.put(`http://localhost:3001/post/${this.post.id}`, postData, {
               headers: {
                 Authorization: `Bearer ${localStorage.getItem('token')}`,
               },
-            })  // update post in db
+            })  
             console.log('Post edited successfully', response.data)
 
-            this.$emit('post-edited', this.post)   // send edited post from component back to Postlist
+            this.$emit('post-edited', this.post)  
             console.log(this.post)
 
-          }else{   // create new post
+          }else{  
             const response = await axios.post('http://localhost:3001/post', postData, {
               headers: {
                 Authorization: `Bearer ${localStorage.getItem('token')}`
               },
             })  
             console.log('Post sent successfully', response.data)
-           // console.log('Post sent successfully', response.data.images.length)
-            //decomenteaza???????
-            // const postId = response.data._path.segments[1]  // from metadata
-            // this.post.id=postId
-
-            this.$emit('post-created', this.post)   // send new post from component back to Postlist
-            //console.log(this.post)
+         
+            this.$emit('post-created', this.post)   
           }
         
           this.post = {
@@ -330,9 +315,9 @@ export default {
             city: '',
             description: '',
             images:[]
-          }   // reset form fields
+          }  
 
-          this.isActive = false   // close dialog window
+          this.isActive = false   
         }
       } catch (error) {
         console.error('Error sending post', error)
@@ -343,7 +328,7 @@ export default {
         return regex.test(value)
     },
     generateCustomTimestamp() {
-      const customDate = new Date()   // from date to timestamp for db
+      const customDate = new Date()  
       const seconds = Math.floor(customDate.getTime() / 1000)
       const nanoseconds = customDate.getMilliseconds() * 1000000
       return {
@@ -356,6 +341,7 @@ export default {
 </script>
 
 <style scoped>
+
   .v-card {
     background-color: #f5f5f5; 
     color: #333; 
@@ -410,16 +396,22 @@ export default {
   }
   .add-image-button {
   border-radius: 50%;
-  width: 56px; /* Adjust size as needed */
-  height: 56px; /* Adjust size as needed */
+  width: 56px;
+  height: 56px; 
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .image-preview {
-  max-width: 100px; /* Limit the preview size */
-  max-height: 100px; /* Limit the preview size */
+  max-width: 100px; 
+  max-height: 100px; 
   margin-right: 8px;
+}
+.hidden-input {
+  display: none;
+}
+.price-input {
+  max-width: 100px;
 }
 </style>

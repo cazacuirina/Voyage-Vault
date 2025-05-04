@@ -110,6 +110,7 @@ const stripe = require('stripe')(process.env.STRIPE_PRIVATE_KEY)
   app.get("/", (req, res) => {
     res.send(`Welcome ${req.user.displayName}`);
   })
+
   app.get("/logout", (req, res) => {
     req.logout(() => {
       res.redirect("/")
@@ -199,11 +200,10 @@ app.get('/user/favorites', checkAuthorization, async (req, res) => {
     }
   })
 
-  ///FA UN SINGUR REQUEST PE USER SI AUTHOR PROFILE
-  app.get('/author/:authorName', async (req, res) => {
+  // -> Get author profile picture
+  app.get('/user/:authorName/profilePicture', async (req, res) => {
     try {
       const authorName = req.params.authorName;
-      // console.log(authorName)
       const usersRef = db.collection('users');
       const snapshot = await usersRef.where('name', '==', authorName).limit(1).get();
   
@@ -213,22 +213,17 @@ app.get('/user/favorites', checkAuthorization, async (req, res) => {
   
       let userId = '';
       let profilePicture = '';
-      // let followersList = [];
   
       snapshot.forEach((doc) => {
         userId = doc.id;
         const userData = doc.data();
         profilePicture = userData.profilePicture || null;
-        // console.log(userId, " - ", profilePicture)
-
-        // followersList = userData.followersList || [];
       });
   
       if (!userId) {
         return res.status(404).json({ error: 'User data not found.' });
       }
   
-      // Căutăm poza de profil în storage (dacă există)
       let base64Image = '';
       if (profilePicture) {
         const filePath = `profilePics/${userId}/${profilePicture}`;
@@ -236,7 +231,6 @@ app.get('/user/favorites', checkAuthorization, async (req, res) => {
         const [fileExists] = await file.exists();
   
         if (fileExists) {
-          // console.log("DA")
           const [fileBuffer] = await file.download();
           base64Image = fileBuffer.toString('base64');
         }
@@ -244,11 +238,7 @@ app.get('/user/favorites', checkAuthorization, async (req, res) => {
   
       res.status(200).json({
         profilePicture: base64Image,
-        // followers: followersList.length,
-        // isFollowing: followersList.includes(req.userEmail),
       });
-
-      // res.status(200).json({ message: 'Profile picture retrieved successfully.', image: base64Image });
   
     } catch (error) {
       console.error('Error fetching author details:', error);
@@ -277,6 +267,20 @@ app.get("/post/:postId/details", async (req, res) => {
         }
   
         res.status(200).send(destinationDetails)
+
+        //TRB SI WHERE PT SELECT
+      // const postRef = db.collection('posts').doc(postId).select('title', 'description', 'likes');
+      // const postDoc = await postRef.get();
+
+      // if (!postDoc.exists) {
+      //   res.status(404).send({ error: 'Post not found' });
+      // } else {
+
+      //   console.log("YES")
+      //   const destinationDetails = postDoc.data();
+
+      //   res.status(200).send(destinationDetails);
+
       }
     } catch (error) {
       res.status(500).send({ error: error.message })
@@ -287,7 +291,7 @@ app.get("/post/:postId/details", async (req, res) => {
 // -> Get post by title
 app.get("/post/:postTitle", async (req, res) => {
   try {
-      console.log("AICI POST")
+      // console.log("AICI POST")
     const postTitle = req.params.postTitle
     console.log(postTitle)
 
@@ -370,27 +374,120 @@ app.get('/author/:authorName/followers', async (req, res) => {
       const usersRef = db.collection('users');
 
       // Căutăm autorul după nume
-      const authorSnapshot = await usersRef.where('name', '==', authorName).limit(1).get();
+
+      // const authorSnapshot = await usersRef.where('name', '==', authorName).limit(1).get();
+      // if (authorSnapshot.empty) {
+      //     return res.status(404).json({ error: 'Author not found' });
+      // }
+
+      // let authorFollowers = 0;
+      // authorSnapshot.forEach(doc => {
+      //     authorFollowers = doc.data().followers || 0;
+      //     subscriptionPrice = doc.data().subscriptionPrice || 0; 
+      //     console.log(authorFollowers)
+      // });
+
+      // res.status(200).json({ followers: authorFollowers,
+      //   subscriptionPrice: subscriptionPrice
+      //  });
+      const authorSnapshot = await usersRef
+        .where('name', '==', authorName)
+        .select('followers', 'noSubscribers', 'subscriptionPrice') 
+        .limit(1)
+        .get();
+
       if (authorSnapshot.empty) {
-          return res.status(404).json({ error: 'Author not found' });
+        return res.status(404).json({ error: 'Author not found' });
       }
 
-      let authorFollowers = 0;
-      authorSnapshot.forEach(doc => {
-          authorFollowers = doc.data().followers || 0;
-          subscriptionPrice = doc.data().subscriptionPrice || 0; 
-          console.log(authorFollowers)
-      });
+      const authorDoc = authorSnapshot.docs[0];
+      const data = authorDoc.data();
 
-      res.status(200).json({ followers: authorFollowers,
+      const authorFollowers = data.followers || 0;
+      const authorSubscribers = data.noSubscribers || 0;
+      const subscriptionPrice = data.subscriptionPrice || 0;
+
+      res.status(200).json({
+        followers: authorFollowers,
+        subscribers: authorSubscribers,
         subscriptionPrice: subscriptionPrice
-       });
-
+      });
   } catch (error) {
       console.error('Error fetching followers count:', error);
       res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
+// -> Get new content from followed/subscribed
+app.get('/user/newContent', checkAuthorization, async (req, res) => {
+  try {
+    const userEmail = req.userEmail;
+    const usersRef = db.collection('users');
+    
+    const userSnapshot = await usersRef.where('email', '==', userEmail).limit(1).get();
+    if (userSnapshot.empty) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userDoc = userSnapshot.docs[0];
+    const userData = userDoc.data();
+
+    const subscribed = userData.subscribed || [];
+    const lastLogin = userData.lastLogin?.toDate?.() || new Date(0);
+
+    if (subscribed.length === 0) {
+      return res.status(200).json({ posts: [], lastVisibleDate: null });
+    }
+
+    const posts = [];
+
+    const chunkArray = (arr, size) =>
+      arr.length > size
+        ? [arr.slice(0, size), ...chunkArray(arr.slice(size), size)]
+        : [arr];
+
+    const chunks = chunkArray(subscribed, 10);
+    let lastVisible = null;
+
+    for (const group of chunks) {
+      let query = db
+        .collection('posts')
+        .where('author', 'in', group)
+        .where('date', '>', lastLogin)
+        .orderBy('date', 'desc')
+        .limit(4)
+        .select('title', 'author', 'country', 'city', 'likes', 'date');
+
+      if (req.query.lastVisibleDate) {
+        const startAfterDate = new Date(req.query.lastVisibleDate);
+        query = query.startAfter(startAfterDate);
+      }
+
+      const snapshot = await query.get();
+
+      snapshot.forEach(doc => {
+        posts.push({ id: doc.id, ...doc.data() });
+      });
+
+      // Setează lastVisible doar dacă snapshot-ul curent are documente
+      if (!lastVisible && snapshot.docs.length > 0) {
+        lastVisible = snapshot.docs[snapshot.docs.length - 1];
+      }
+
+      // Oprește dacă ai deja postări (evită dubluri între grupuri)
+      if (posts.length > 0) break;
+    }
+
+    const lastVisibleDate = lastVisible?.get('date')?.toDate?.() || null;
+
+    return res.status(200).json({ posts, lastVisibleDate });
+
+  } catch (error) {
+    console.error('Error fetching news:', error);
+    return res.status(500).json({ error: 'Error fetching news.' });
+  }
+});
+
 
 // -> Get post pictures
 app.get('/post/:postId/images', async (req, res) => {
@@ -441,7 +538,39 @@ app.get('/post/:postId/images', async (req, res) => {
   }
 });
 
+// -> Get user's trips
+app.get('/user/trips', checkAuthorization, async (req, res) => {
+  const userName = req.userName;
 
+  try {
+    // Referința la colecția de utilizatori
+    const usersRef = db.collection("users");
+
+    // Căutăm utilizatorul după nume
+    const userSnapshot = await usersRef.where("name", "==", userName).limit(1).get();
+
+    if (userSnapshot.empty) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userId = userSnapshot.docs[0].id;
+    const userRef = usersRef.doc(userId);
+
+    // Obținem toate documentele din subcolecția 'trips'
+    const tripsSnapshot = await userRef.collection('trips').get();
+
+    const trips = tripsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    return res.status(200).json({ trips });
+
+  } catch (error) {
+    console.error('Error fetching trips:', error);
+    return res.status(500).json({ message: 'Internal server error.' });
+  }
+});
 
 // -> Get post comments
 app.get("/post/:postId/comments", async(req,res)=>{
@@ -476,7 +605,8 @@ app.get("/post/:postId/comments", async(req,res)=>{
     }
   })
 
-  app.get('/post/:postId/comments/:commentId/replies', checkAuthorization, async (req, res) => {
+  // -> Get comment's replies
+  app.get('/post/:postId/comments/:commentId/replies', async (req, res) => {
     try {
       const { postId, commentId } = req.params;
   
@@ -509,6 +639,139 @@ app.get("/post/:postId/comments", async(req,res)=>{
     }
   });
 
+  // -> Get posts rating and likes statistics
+  app.get('/posts/stats', checkAuthorization, async (req, res) => {
+    const userName = req.userName;
+    const currentYear = new Date().getFullYear();
+
+    try {
+        // Filtrăm postările autorului în anul curent
+        const postsRef = db.collection('posts');
+        
+        // Interogăm postările pentru autorul respectiv din anul curent
+        const querySnapshot = await postsRef
+            .where('author', '==', userName)  // Filtrăm postările după username
+            .get();
+
+        if (querySnapshot.empty) {
+            return res.status(404).send({ error: 'No posts found for this user' });
+        }
+
+        let postsStats = [];
+
+        // Iterăm prin postările găsite și verificăm dacă data este din anul curent
+        querySnapshot.forEach(postDoc => {
+          const postData = postDoc.data();
+          const postDate = new Date(postData.date._seconds * 1000);
+
+           if (postDate.getFullYear() === currentYear) {
+                // Extragem datele pentru likes și ratinguri
+                const likes = postData.likes || 0;
+                const starCounts = postData.starCounts || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
+                // Calculăm totalul ratingurilor (numărul de evaluări)
+                const totalRatings = Object.values(starCounts).reduce((acc, count) => acc + count, 0);
+
+                postsStats.push({
+                    //postId: postDoc.id, 
+                    // title: postData.title,
+                    date: postDate,
+                    likes,
+                    rating:  postData.rating,
+                    totalRatings,
+                    //starCounts
+                });
+            }
+        });
+
+        // Returnăm statistici pentru fiecare postare
+        res.status(200).json(postsStats);
+
+    } catch (error) {
+        console.error('Error fetching post stats:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+  // -> Get user's earinings and payments
+  app.get('/user/financials', checkAuthorization, async (req, res) => {
+    try{
+    const userName = req.userName
+    //din colectia users cauta dupa username apoi din subcolectiile payments si earnings preia doar Amount si Date 
+    // doar daca data este din anul curent
+    const startOfYear = new Date(new Date().getFullYear(), 0, 1); 
+    // console.log(startOfYear)
+    const usersRef = db.collection("users");
+    const userSnapshot = await usersRef.where("name", "==", userName).limit(1).get();
+
+    if (userSnapshot.empty) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userId = userSnapshot.docs[0].id;
+    const userRef = usersRef.doc(userId);
+
+    // Doar câmpurile amount și date
+    const [paymentsSnapshot, earningsSnapshot] = await Promise.all([
+      userRef.collection("payments").where("date", ">=", startOfYear).select("amount", "date").get(),
+      userRef.collection("earnings").where("date", ">=", startOfYear).select("amount", "date").get(),
+    ]);
+
+    const payments = paymentsSnapshot.docs.map(doc => doc.data());
+    const earnings = earningsSnapshot.docs.map(doc => doc.data());
+
+    res.status(200).json({
+      payments,
+      earnings,
+    });
+  } catch (error) {
+    console.error("Error fetching financials:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+
+  });
+
+// -> Get users's payers per post
+app.get('/user/payersperpost', checkAuthorization, async (req, res) => {
+  try {
+    const userName = req.userName;
+    const startOfYear = new Date(new Date().getFullYear(), 0, 1); 
+    // console.log(startOfYear)
+    const usersRef = db.collection("users");
+    const userSnapshot = await usersRef.where("name", "==", userName).limit(1).get();
+
+    if (userSnapshot.empty) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userId = userSnapshot.docs[0].id;
+    // console.log(userId) //aici afiseaza ok
+    const userRef = usersRef.doc(userId); //eroare Error fetching payers: TypeError: userRef.doc is not a function
+
+    const earningsSnapshot = await userRef
+      .collection("earnings")
+      .where("date", ">=", startOfYear)
+      .select("buyer", "isSubscription")
+      .get();
+
+    // Filtrăm doar cu isSubscription === false
+    
+    const buyersRaw = earningsSnapshot.docs
+      .map(doc => doc.data())
+      .filter(entry => entry.isSubscription === false);
+      // console.log(buyersRaw)
+
+    // Extragem buyerii distincți
+    const uniqueBuyers = [...new Set(buyersRaw.map(entry => entry.buyer))];
+
+    res.status(200).json({ buyers: uniqueBuyers.length });
+
+  } catch (error) {
+    console.error("Error fetching payers:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 //--------------------POST ROUTES------------------------
 app.post('/register', async(req, res) => {
     try {
@@ -519,6 +782,7 @@ app.post('/register', async(req, res) => {
             name: req.body.name,
             email: req.body.email,
             password: req.body.password,
+            lastLogin: admin.firestore.FieldValue.serverTimestamp()
           };
             console.log('Trying to post the following data:', user)
 
@@ -596,6 +860,12 @@ app.post ('/login', async(req, res) => {
                             })
                             console.log("TOKEN: "+token+" NAME "+document.name)
     
+                            snapshot.forEach(async doc => {
+                              await usersRef.doc(doc.id).update({
+                                lastLogin: admin.firestore.FieldValue.serverTimestamp()
+                              });
+                            });
+
                             res.status(200).json({  
                             token: token,
                             userName: document.name,
@@ -611,6 +881,48 @@ app.post ('/login', async(req, res) => {
         }
     }
 })
+
+// -> Add new user trip
+app.post('/user/trip', checkAuthorization, async (req, res) => {
+  const userName = req.userName;
+  const { departureDate, arrivalDate, city, country, touristSpots } = req.body;
+  console.log(userName, departureDate, arrivalDate, city, country, touristSpots)
+
+  // Verifică dacă sunt toate câmpurile necesare
+  if (!departureDate || !arrivalDate || !city || !country || !touristSpots) {
+    return res.status(400).json({ message: 'All fields are required (departureDate, arrivalDate, city, country, touristSpots).' });
+  }
+
+  try {
+    // Obține referința la utilizator din Firestore
+    const usersRef = db.collection("users");
+
+    // Găsește userId-ul utilizatorului care plătește
+    const userSnapshot = await usersRef.where("name", "==", userName).limit(1).get();
+    if (userSnapshot.empty) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    const userId = userSnapshot.docs[0].id;
+    const userRef = usersRef.doc(userId);
+
+    // Salvează excursia în subcolectia 'trips'
+    const tripData = {
+      departureDate,
+      arrivalDate,
+      city,
+      country,
+      touristSpots,
+    };
+
+    const tripRef = await userRef.collection('trips').add(tripData);
+
+    return res.status(201).json({ tripId: tripRef.id, message: 'Trip saved successfully!' });
+
+  } catch (error) {
+    console.error('Error saving trip:', error);
+    return res.status(500).json({ message: 'Internal server error.' });
+  }
+});
 
 // -> Add a profile pic
 app.post('/profile/picture', checkAuthorization, async (req, res) => {
@@ -962,6 +1274,8 @@ app.post("/stripe/create-post-checkout-session", checkAuthorization, async (req,
 //     res.status(500).json({ error: "Internal Server Error" });
 //   }
 // });
+
+// -> Save subscriber payment
 app.post("/subscriber/payment", checkAuthorization, async (req, res) => {
   try {
     const { authorName, amount, isSubscription } = req.body;
@@ -1022,6 +1336,7 @@ app.post("/subscriber/payment", checkAuthorization, async (req, res) => {
   }
 });
 
+// -> Save payment for post
 app.post("/post/payment", checkAuthorization, async (req, res) => {
   try {
     const { postTitle, price, authorName } = req.body;
@@ -1073,8 +1388,8 @@ app.post("/post/payment", checkAuthorization, async (req, res) => {
 
     // Send emails to both the buyer and the author
     console.log("Sending post payment emails...");
-    // await sendPostPaymentEmail(userEmail, userName, authorName, price, postTitle, false); // To the buyer
-    // await sendPostPaymentEmail(authorEmail, authorName, userName, price, postTitle, true); // To the author
+    await sendPostPaymentEmail(userEmail, userName, authorName, price, postTitle, false); // To the buyer
+    await sendPostPaymentEmail(authorEmail, authorName, userName, price, postTitle, true); // To the author
 
     res.status(200).json({ message: "Post payment saved successfully!" });
   } catch (error) {
@@ -1124,7 +1439,7 @@ app.put('/post/:postId', checkAuthorization, async (req, res) => {
 
 // -> Rate a post 
 app.put('/post/:postId/rate', checkAuthorization, async (req, res) => {
-    console.log("ALOHA ",req.params.postId )
+    // console.log("ALOHA ",req.params.postId )
     if(!req.body.hasOwnProperty("rating")){
         return res.status(400).json({ error: 'Rating is required' })
     }else{
@@ -1143,19 +1458,24 @@ app.put('/post/:postId/rate', checkAuthorization, async (req, res) => {
             const postData = postDoc.data()
             let avgRating = postData.rating || 0
             const starCounts = postData.starCounts || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-            starCounts[rating] = (starCounts[rating] || 0) + 1
+            // starCounts[rating] = (starCounts[rating] || 0) + 1
+
+            // !!! Rotunjirea ratingului la cel mai apropiat întreg
+            const roundedRating = Math.round(rating)
+            starCounts[roundedRating] = (starCounts[roundedRating] || 0) + 1
 
             const totalRatings = Object.keys(starCounts).reduce((acc, key) => acc + (parseInt(key) * starCounts[key]), 0);
             const totalCount = Object.values(starCounts).reduce((acc, count) => acc + count, 0)
-            avgRating = totalCount > 0 ? (totalRatings / totalCount) : 0
+            avgRating = totalCount > 0 ? parseFloat((totalRatings / totalCount).toFixed(2)) : 0;
 
             const updatedPost = await postRef.update({
                 rating: avgRating, 
                 starCounts: starCounts
             })   
 
+            console.log(starCounts)
             //res.status(200).send(updatedPost)
-            res.status(200).json({ message: 'Rating updated successfully', avgRating });
+            res.status(200).json({ message: 'Rating updated successfully', avgRating, starCounts });
         
           } catch (error) {
             console.error('Error updating rating:', error);
@@ -1456,6 +1776,7 @@ app.put("/users/:authorName/subscribe", checkAuthorization, async (req, res) => 
         subscribed: admin.firestore.FieldValue.arrayUnion(authorName),
       }),
       usersRef.doc(authorId).update({
+        noSubscribers: admin.firestore.FieldValue.increment(1),
         subscribers: admin.firestore.FieldValue.arrayUnion(userName),
       })
     ]);
@@ -1499,6 +1820,7 @@ app.put("/users/:authorName/unsubscribe", checkAuthorization, async (req, res) =
         subscribed: admin.firestore.FieldValue.arrayRemove(authorName),
       }),
       usersRef.doc(authorId).update({
+        noSubscribers: admin.firestore.FieldValue.increment(-1),
         subscribers: admin.firestore.FieldValue.arrayRemove(userName),
       })
     ]);
@@ -1542,7 +1864,6 @@ app.put("/post/:postTitle/access", checkAuthorization, async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
-
 
 // -> Edit a comment
 app.put('/post/:postId/comments/:commentId', checkAuthorization, async (req, res) => {
@@ -1619,6 +1940,50 @@ app.put('/user/subscription', checkAuthorization, async (req, res) => {
   } catch (error) {
       console.error('Error updating subscription price:', error);
       res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// -> Edit a trip
+app.put('/user/trips/:tripId', checkAuthorization, async (req, res) => {
+  const userName = req.userName;
+  const { tripId } = req.params;
+  const { departureDate, arrivalDate, city, country, touristSpots } = req.body;
+
+  if (!departureDate || !arrivalDate || !city || !country || !touristSpots) {
+    return res.status(400).json({ message: 'All fields are required for update.' });
+  }
+
+  try {
+    const usersRef = db.collection("users");
+    const userSnapshot = await usersRef.where("name", "==", userName).limit(1).get();
+
+    if (userSnapshot.empty) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userId = userSnapshot.docs[0].id;
+    const tripRef = usersRef.doc(userId).collection('trips').doc(tripId);
+
+    // Verificăm dacă excursia există
+    const tripDoc = await tripRef.get();
+    if (!tripDoc.exists) {
+      return res.status(404).json({ error: "Trip not found" });
+    }
+
+    // Update date
+    await tripRef.update({
+      departureDate,
+      arrivalDate,
+      city,
+      country,
+      touristSpots,
+    });
+
+    return res.status(200).json({ message: "Trip updated successfully!" });
+
+  } catch (error) {
+    console.error('Error updating trip:', error);
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 });
 
@@ -1715,6 +2080,39 @@ app.delete('/post/:postId/comments/:commentId', checkAuthorization, async (req, 
         res.status(500).send({error:'Internal Server Error'})
     }
 })
+
+// -> Delete Trip
+app.delete('/user/trips/:tripId', checkAuthorization, async (req, res) => {
+  const userName = req.userName;
+  const tripId = req.params.tripId;
+
+  try {
+    const usersRef = db.collection("users");
+
+    const userSnapshot = await usersRef.where("name", "==", userName).limit(1).get();
+
+    if (userSnapshot.empty) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userId = userSnapshot.docs[0].id;
+    const userRef = usersRef.doc(userId);
+
+    const tripRef = userRef.collection('trips').doc(tripId);
+    const tripSnapshot = await tripRef.get();
+
+    if (!tripSnapshot.exists) {
+      return res.status(404).json({ error: "Trip not found" });
+    }
+
+    await tripRef.delete();
+
+    return res.status(200).json({ message: "Trip deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting trip:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+});
 
 
 // Start Server

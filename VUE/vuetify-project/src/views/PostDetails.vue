@@ -17,58 +17,91 @@
               </v-card-text>
               <v-divider></v-divider>
 
-
+              <div class="carousel-container">
               <v-carousel v-if="images.length > 0" height="400" show-arrows="hover" cycle hide-delimiter-background>
                 <v-carousel-item v-for="(image, i) in images" :key="i">
-                    <v-sheet :color="colors[i]" height="100%">
+                    <v-sheet class="carousel-background" :color="colors[i]" height="100%">
                         <div class="d-flex fill-height justify-center align-center">
                             <img :src="image" alt="Post image" class="carousel-image" />
                         </div>
                     </v-sheet>
                 </v-carousel-item>
             </v-carousel>
+            </div>
+          
             
-              <v-row class="d-flex align-center">
-                <v-col class="text-center">
-                  <div id="rating">Rating: {{ post.rating ? post.rating.toFixed(1) : 'No rating yet' }}</div> 
-                  <v-rating
-                    v-model="post.rating"  
-                    color="orange"
-                    empty-icon="mdi-star-outline"
-                    full-icon="mdi-star"
-                    half-icon="mdi-star-half-full"
-                    hover
-                    half-increments
+                        <v-card
+              class="d-flex flex-column mx-auto py-8 ratingcard"
+              elevation="10"
+              width="100%" 
+            >
+              <v-row>
+                <v-col cols="12" md="6" class="d-flex flex-column justify-center ">
+                  <div class="d-flex justify-center mt-3 mb-2 text-h5">Rating Overview</div>
+
+                  <div class="d-flex align-center flex-column my-auto">
+                    <div class="text-h2 mb-3 mt-3">
+                      {{ post.rating ? post.rating.toFixed(1) : 'No rating yet' }}
+                      <span class="text-h6 ml-n3">/5</span>
+                    </div>
+
+                    <v-rating
+                    v-model="userRating"
+                    :color="isUserAuthenticated ? 'orange' : 'yellow-darken-3'" 
+                    :readonly="!isUserAuthenticated"
+                    :half-increments="true"
                     length="5"
-                    size="64"
-                    readonly 
+                    size="75"
+                    hover
+                    @click="showSendButton = true" 
                   ></v-rating>
+                  <div class="px-3 text-center text-subtitle-1 mt-2">
+                    {{ totalRatings }} ratings
+                  </div>
+                  </div>
+
+                  <v-row v-if="isUserAuthenticated && showSendButton" class="d-flex align-center my-4">
+                  <v-col class="text-center">
+                    <div>Rate this post?</div>
+                  </v-col>
+                  <v-col class="text-center">
+                    <v-btn color="green" @click="submitRating">
+                      Send Rating
+                    </v-btn>
+                  </v-col>
+                </v-row>
+                </v-col>
+
+                <v-col cols="12" md="6" class="d-flex flex-column justify-center">
+                  <v-list bg-color="transparent" class="d-flex flex-column-reverse ratinglist" density="compact">
+                    <v-list-item v-for="rating in [1, 2, 3, 4, 5]" :key="rating">
+                      <v-progress-linear
+                        :model-value="getPercentage(rating)"
+                        class="mx-n5"
+                        color="yellow-darken-3"
+                        height="20"
+                        rounded
+                      ></v-progress-linear>
+
+                      <template v-slot:prepend>
+                        <span>{{ rating }}</span>
+                        <v-icon class="mx-3" icon="mdi-star"></v-icon>
+                      </template>
+
+                      <template v-slot:append>
+                        <div class="rating-values">
+                          <span class="d-flex justify-end">{{post.starCounts?.[rating] || 0 }}</span>
+                        </div>
+                      </template>
+                    </v-list-item>
+                  </v-list>
                 </v-col>
               </v-row>
-
-               <v-row v-if="isUserAuthenticated" class="d-flex align-center my-4">
-                <v-col class="text-center">
-                  <div>Rate this post?</div>
-                  <v-rating 
-                  v-model="userRating" 
-                  color="orange" 
-                  half-increments
-                  dense 
-                  @click="showSendButton = true"
-                ></v-rating>
-                <v-btn 
-                  v-if="showSendButton" 
-                  color="green" 
-                  @click="submitRating"
-                >
-                  Send Rating
-                </v-btn>
-                          </v-col>
-                        </v-row>
+            </v-card>
 
               <v-divider></v-divider>
-              <div v-if="comments.length === 0" class="my-4">No comments added yet.</div>
-              <v-list>
+              <div v-if="comments.length === 0" class="my-4 ">No comments added yet.</div>
+              <v-list class="comments-container">
                 <v-list-item-group>
                   <v-list-item class="comment-container" v-for="comment in displayedComments" :key="comment.id">
                     <template v-slot:default="{ active }">
@@ -76,21 +109,26 @@
                         <v-list-item-title class="font-weight-bold comment-username">{{ comment.userName }}</v-list-item-title>
                         <v-list-item-subtitle class="comment-text">{{ comment.comment }}</v-list-item-subtitle>
                         
-                        <!-- <v-expansion-panels v-if="comment.hasReplies"> -->
                           <v-expansion-panels v-if="comment.repliesCount > 0">
             <v-expansion-panel>
               <v-expansion-panel-title @click="getReplies(comment)">
-                <!-- <v-icon right>mdi-chevron-down</v-icon> -->
                 Show Replies
               </v-expansion-panel-title>
               <v-expansion-panel-text>
-                <v-list>
+                <v-list class="replies">
                   <v-list-item-group>
                     <v-list-item v-for="reply in comment.replies" :key="reply.id">
                       <v-list-item-content>
                         <v-list-item-title><b>{{ reply.userName }}:</b> {{ reply.comment }}</v-list-item-title>
                       </v-list-item-content>
+                      <v-divider
+                      v-if="index !== comment.replies.length - 1"
+                      class="my-1"
+                      color="black"
+                      thickness="2"
+                    />
                     </v-list-item>
+                    
                     </v-list-item-group>
                   </v-list>
                 </v-expansion-panel-text>
@@ -119,7 +157,6 @@
                 <v-col cols="12" class="mt-4">
                   <v-textarea v-model="newComment" :label="replyTo ? 'Reply to ' + replyTo.userName : 'Add a comment'" >
                   </v-textarea>
-                  <!-- <v-textarea v-model="newComment" label="Add a comment"></v-textarea> -->
                 </v-col>
                 
                 <v-col cols="12" class="text-right">
@@ -174,7 +211,7 @@ export default {
       return !!localStorage.getItem('token')
     },
     isUserTheAuthor() {
-      return (comment) => {  // check author to edit/delete comment
+      return (comment) => {  
         const userName = localStorage.getItem('userName')
         return comment.userName === userName
       }
@@ -187,6 +224,10 @@ export default {
       const endIndex = startIndex + this.itemsPerPage
       return this.comments.slice(startIndex, endIndex)
     },
+    totalRatings() {
+      if (!this.post.starCounts) return 0;
+      return Object.values(this.post.starCounts).reduce((sum, count) => sum + count, 0);
+    }
   },
   mounted() {
     this.userName = localStorage.getItem('userName');
@@ -204,21 +245,28 @@ export default {
             },
         })
 
-        this.post = postResponse.data //get post details
+        console.log(postResponse.data)
+        this.post = postResponse.data 
         this.post.rating = parseFloat(postResponse.data.rating)
-        this.post.date = this.formatDate(this.post.date)  //convert timestamp to date
+        console.log(this.post.starCounts)
+        this.userRating = this.post.rating 
+        this.post.date = this.formatDate(this.post.date)  
         
-        await this.getComments()  // retrieve post comments
+        await this.getComments()  
         await this.getPostImages()
     } catch (error) {
         console.error('Error fetching post and comments:', error)
     }
 },
+getPercentage(star) {
+      const count = this.post.starCounts?.[star] || 0;
+      return this.totalRatings > 0 ? (count / this.totalRatings) * 100 : 0;
+    },
 async submitRating() {
       try {
         const postId = this.post.id
-        //console.log(postId," ", this.userRating, " ", localStorage.getItem('token'))
-        //const token=localStorage.getItem('token')
+      
+        console.log(this.post.rating)
         const response = await axios.put(`http://localhost:3001/post/${postId}/rate`, {
           rating: this.userRating,
         }, {
@@ -228,6 +276,9 @@ async submitRating() {
         });
 
         console.log('Rating submitted successfully:', response.data)
+        const { avgRating, starCounts } = response.data;
+        this.post.rating = avgRating;
+        this.post.starCounts = starCounts;
         this.showSendButton = false
       } catch (error) {
         console.error('Error submitting rating:', error)
@@ -241,7 +292,7 @@ async getComments() {
             },
         })
 
-        this.comments = commentsResponse.data  //get post comments
+        this.comments = commentsResponse.data  
 
         this.comments.sort((a, b) => (b.repliesCount || 0) - (a.repliesCount || 0));
 
@@ -253,14 +304,14 @@ async getComments() {
 async getReplies(comment) {
     try {
       if (!comment.replies) {
-        // Facem GET doar dacă replies nu au fost deja încărcate
+       
         const response = await axios.get(`http://localhost:3001/post/${this.post.id}/comments/${comment.id}/replies`, {
           headers: {
             Authorization: `Bearer ${this.token}`,
           },
         });
 
-        // Stocăm replies pentru acest comentariu
+      
         comment.replies = response.data;
       }
     } catch (error) {
@@ -269,16 +320,14 @@ async getReplies(comment) {
   },
 async getPostImages() {
   try {
-    // Cerere GET pentru pozele postării
+
     const response = await axios.get(`http://localhost:3001/post/${this.post.id}/images`, {
       headers: {
-        'Cache-Control': 'no-cache',  // Evităm cache-ul pentru a obține cele mai recente date
+        'Cache-Control': 'no-cache',  
       },
     });
 
     if (response.data.images) {
-      // Adăugăm fiecare imagine în format base64 în post
-      //this.images = response.data.images.map(image => `data:image/jpg;base64,${image}`);
       this.images = response.data.images.map(image => image.base64); 
       console.log('Post images retrieved successfully', this.images);
     }
@@ -288,15 +337,13 @@ async getPostImages() {
 },
   setReply(comment){
     this.replyTo=comment
-    //  console.log(comment.id)
   },
     async postComment() {
       try {
         this.comment.comment=this.newComment
-        this.comment.userName=this.userName // comment author is current user
+        this.comment.userName=this.userName 
 
         if (this.replyTo) {
-      // Construct the URL for replies (POST request to /post/:postId/comments/:commentId/replies)
       const response = await axios.post(
         `http://localhost:3001/post/${this.post.id}/comments/${this.replyTo.id}/replies`,
         this.comment,
@@ -311,16 +358,12 @@ async getPostImages() {
        this.comment.repliesCount=1 
       }
       
-
-      // Add reply to the appropriate comment in the list
       const commentIndex = this.comments.findIndex(c => c.id === this.replyTo.id);
       if (commentIndex !== -1) {
         if (!this.comments[commentIndex].replies) {
-          this.comments[commentIndex].replies = []; // Initialize replies array if not exists
+          this.comments[commentIndex].replies = []; 
         }
-        this.comments[commentIndex].replies.unshift(response.data); // Add the new reply
-        // true; // Ensure replies section is shown
-        //this.comments[commentIndex].repliesCount +=1;
+        this.comments[commentIndex].replies.unshift(response.data); 
         if (!this.comments[commentIndex].repliesCount) {
           this.comments[commentIndex].repliesCount = 1;
         } else {
@@ -328,20 +371,20 @@ async getPostImages() {
         }
       }
 
-      this.replyTo = null; // Reset replyTo after posting
+      this.replyTo = null;
       } else if(this.editing){
           await axios.put(`http://localhost:3001/post/${this.post.id}/comments/${this.comment.id}`,this.comment, {
           headers: {
             Authorization: `Bearer ${this.token}`,
           },
-        }) // put edited comment in db
+        }) 
         
-        const editedIndex = this.comments.findIndex(c => c.id === this.comment.id) // find comment in list
+        const editedIndex = this.comments.findIndex(c => c.id === this.comment.id) 
         if (editedIndex !== -1) {
-          this.comments[editedIndex].comment = this.newComment  // update comments list
+          this.comments[editedIndex].comment = this.newComment  
         }
         
-        this.editing = false  // stop editing mode after completing update
+        this.editing = false  
 
         }else{
 
@@ -349,10 +392,10 @@ async getPostImages() {
               headers: {
                 Authorization: `Bearer ${this.token}`,
               },
-            })  // post new comment in db
+            })  
           console.log('Comment sent successfully', response.data)
           
-          this.comments.unshift(response.data)  // add new comment at the beggining of the list
+          this.comments.unshift(response.data) 
           console.log(this.comments)
         }
 
@@ -363,9 +406,9 @@ async getPostImages() {
     },
 
     editComment(comment){
-      this.newComment=comment.comment  // find comment to be edited - in textarea
+      this.newComment=comment.comment  
       this.comment.id=comment.id
-      this.editing=true    // edit mode on
+      this.editing=true   
     },
 
     async deleteComment(commentId){
@@ -374,9 +417,9 @@ async getPostImages() {
           headers: {
             Authorization: `Bearer ${this.token}`,
           },
-        })  // delete comment from db
+        })  
 
-        this.comments = this.comments.filter(comment => comment.id !== commentId)  // delete comment from list
+        this.comments = this.comments.filter(comment => comment.id !== commentId)  
       } catch (error) {
         console.error('Error deleting comment:', error)
       }
@@ -385,7 +428,7 @@ async getPostImages() {
     formatDate(timestamp) {
       const seconds = timestamp._seconds || 0
       const nanoseconds = timestamp._nanoseconds || 0
-      const date = new Date(seconds * 1000 + nanoseconds / 1000000)  // from timestamp to date
+      const date = new Date(seconds * 1000 + nanoseconds / 1000000)  
 
       const options = { year: 'numeric', month: '2-digit', day: '2-digit' }
       return date.toLocaleDateString('en-US', options)
@@ -462,6 +505,14 @@ async getPostImages() {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-bottom: 20px;
 }
+.comments-container{
+  background-color: #fdecd3;
+  margin: 1.5em 2em;
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
 
 .comment-container {
   background-color: burlywood;
@@ -510,4 +561,116 @@ async getPostImages() {
   color: #333;
 }
 
+.carousel-container {
+  margin-bottom: 2.5em;
+  
+}
+
+.carousel-background{
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.carousel-image {
+  max-height: 380px; 
+  width: auto;
+  border: dashed 4px #5c3d24; 
+  padding: 0.5 em;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s;
+}
+
+.carousel-image:hover {
+  transform: scale(1.2);
+}
+
+.ratingcard{
+  background-color: #d4a373; 
+  padding: 1.5em;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: auto;
+}
+.v-rating {
+  padding: 1em;
+  background-color: #ecc798 ;
+  transition: background-color 0.3s;
+  
+  border-radius: 8px;
+}
+
+.v-rating:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  background-color: #ebcfa5;
+}
+
+.text-h2 {
+  color: #8b4513;
+  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+  text-shadow: 0 1px 2px #a3907c;
+}
+
+.text-h5 {
+  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+  color: #5c3d24;
+  margin-bottom: 1em;
+}
+
+.v-progress-linear {
+  background-color: #e7c69f !important;
+}
+
+.rating-values span {
+  font-family: 'Quicksand', sans-serif;
+  font-weight: bold;
+  color: #4f3621;
+}
+
+
+.v-expansion-panel {
+  background-color: #ebcfa5;
+  border-radius: 8px;
+  margin-top: 10px;
+  font-family: 'Quicksand', sans-serif;
+  color: #4b3621;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.v-expansion-panel-title {
+  font-weight: bold;
+  color: #8b4513;
+  font-style: italic;
+  font-family: 'Lucida Sans', sans-serif;
+}
+
+.v-expansion-panel-text {
+  background-color: #fdf1dc;
+  padding: 10px;
+  border-radius: 0 0 8px 8px;
+}
+
+.replies {
+  background-color: #fdf1dc !important; 
+}
+
+.v-pagination {
+  background-color: #f0d7ae;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.05);
+}
+
+.v-pagination .v-btn {
+  background-color: #a97c50 !important;
+  color: white !important;
+  transition: background-color 0.3s ease;
+}
+
+.v-pagination .v-btn:hover {
+  background-color: #cba57b !important;
+}
+.ratinglist{
+  flex-grow: 1;
+}
 </style>

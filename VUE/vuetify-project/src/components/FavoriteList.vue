@@ -73,30 +73,30 @@ export default {
           headers: {
             Authorization: `Bearer ${this.token}`,
           },
-        })  // get user favorite destinations
+        })  
 
         this.favoriteList = response.data.travelList.sort((a, b) => {
-        const compareCountry = a.country.localeCompare(b.country)  //sort alphabetically by country
+        const compareCountry = a.country.localeCompare(b.country) 
         if (compareCountry !== 0) {
           return compareCountry
         }
-        return a.city.localeCompare(b.city) //same country -> sort by city
+        return a.city.localeCompare(b.city)
       })
 
       } catch (error) {
         console.error('Error fetching favoriteList ', error)
       } finally {
         setTimeout(() => {
-          this.loadingFavorites = false  // wait for user favorites to be retrieved
+          this.loadingFavorites = false  
         }, 1000)
       }
     },
     async fetchDetails(index) {
-      const favorite = this.favoriteList[index]  // select psot
+      const favorite = this.favoriteList[index]  
       console.log(favorite)
       try {
-        const response = await axios.get(`http://localhost:3001/post/${favorite.postId}/details`)  // get details
-        this.favoriteList[index].details = response.data   // update favorite list
+        const response = await axios.get(`http://localhost:3001/post/${favorite.postId}/details`) 
+        this.favoriteList[index].details = response.data  
 
       } catch (error) {
         console.error('Error fetching details:', error)

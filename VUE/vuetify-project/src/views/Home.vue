@@ -24,6 +24,9 @@
       <v-container v-if="showFavorites" id="containerFavs" class="d-flex flex-column align-center">
         <FavoriteList />
       </v-container>
+      <v-container v-if="showNewContent" id="containerContent" class="d-flex flex-column align-center">
+        <NewContent />
+      </v-container>
     </div>
 
     <v-main>
@@ -34,20 +37,22 @@
 
 <script>
 import FavoriteList from '../components/FavoriteList.vue';
+import NewContent from '../components/NewContent.vue';
 import axios from 'axios';
 
 export default {
-  components: { FavoriteList },
+  components: { FavoriteList, NewContent },
   data() {
     return {
       showFavorites: false,
+      showNewContent: false,
       userName: null,
       userEmail: null,
       token: null,
       buttons: [
         { text: 'Favorite Posts', icon: 'https://img.icons8.com/?size=100&id=duv8QA21E0FA&format=png&color=000000', action: () => this.toggleFavorites() },
         { text: 'Planned Trips', icon: 'https://img.icons8.com/?size=100&id=tRqKljzS2Fww&format=png&color=000000', action: () => this.navigateToTrips() },
-        { text: 'New Content', icon: 'https://img.icons8.com/?size=100&id=55004&format=png&color=000000', action: () => {} }
+        { text: 'New Content', icon: 'https://img.icons8.com/?size=100&id=55004&format=png&color=000000', action: () => this.toggleNewContent() }
       ]
     }
   },
@@ -64,20 +69,42 @@ export default {
     },
   },
   methods: {
-    toggleFavorites() {
-      this.showFavorites = !this.showFavorites;
-
-      const cardContainer = document.querySelector('.card-container');
-    const favContainer = document.querySelector('#containerFavs');
+   expandButtons(containerName, shouldExpand){
+    const cardContainer = document.querySelector('.card-container');
+    const favContainer = document.querySelector(containerName);
     
-    if (this.showFavorites) {
+    if (shouldExpand) {
       cardContainer.classList.add('shrink');
       favContainer.classList.add('expanded');
     } else {
       cardContainer.classList.remove('shrink');
-      favContainer.classList.remove('expanded');
     }
+    console.log('containerName:', containerName, 'element:', favContainer, 'has class expanded?', favContainer?.classList.contains('expanded'));
+
+   },
+
+    toggleFavorites() {
+      this.showFavorites = !this.showFavorites;
+      if(this.showNewContent){
+        this.showNewContent=false
+      }
+      this.$nextTick(() => {
+        this.expandButtons("#containerFavs", this.showFavorites);
+      });
+    
     },
+
+    toggleNewContent() {
+      this.showNewContent = !this.showNewContent;
+      if(this.showFavorites){
+        this.showFavorites=false
+      }
+      this.$nextTick(() => {
+        this.expandButtons("#containerContent", this.showNewContent);
+      });
+    
+    },
+
     navigateToTrips() {
       this.$router.push('/trips');
     }
@@ -86,52 +113,25 @@ export default {
 </script>
 
 <style scoped>
-/* body, html {
-  overflow-x: hidden;
-} */
+
 .app {
   background: linear-gradient(to bottom, #f0dabc , #8f5b3a);
-  min-height: 100%; /* Asigură-te că ocupă întreaga înălțime */
+  min-height: 100%; 
   display: flex;
   flex-direction: column;
   justify-content: space-between; 
   overflow: hidden;
 }
-/* .card-container {
-  display: flex;
-  justify-content: center; 
-  gap: 2em; 
-  padding-top: 3em;
-}*/
-
-/*.menu-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin: 1em;
-  padding: 2em;
-  text-align: center;
-  width: 250px;
-  height: 250px;
-  border: dashed 4px #b79866;
-  background-color: #f5f1eb;
-  font-family: 'Quicksand', sans-serif;
-  font-weight: bold;
-  color: #683312;
-  border: #683312 dashed 5px;
-} */
 .card-container {
   display: flex;
   justify-content: center;
-  /* gap: 2em; */
   padding-top: 3em;
-  transition: all 0.3s ease; /* Tranziție lină */
+  transition: all 0.3s ease; 
 }
 
 .card-container.shrink {
-  transform: translateY(-5em); /* Urcă puțin butoanele */
-  gap: 1em; /* Spațiu mai mic între ele */
+  transform: translateY(-5em);
+  gap: 1em; 
 }
 
 .menu-card {
@@ -150,7 +150,7 @@ export default {
   font-weight: bold;
   color: #683312;
   border: #683312 dashed 5px;
-  transition: all 0.3s ease; /* Tranziție lină */
+  transition: all 0.3s ease; 
 }
 
 .menu-card.shrink {
@@ -160,26 +160,23 @@ export default {
 
 
 .card-icon {
-  width: 100px; /* Emoji mai mare */
+  width: 100px; 
   height: 100px;
   margin-bottom: 0.5em;
 }
-#containerFavs {
-  height: 20em; /* Înălțime inițială mai mare */
-  width: 60em; /* Lățime inițială */
-  margin-top: -3em; /* Urcă mai mult containerul */
-  transition: all 0.3s ease; /* Tranziție lină */
+#containerFavs,  #containerContent{
+  height: 20em; 
+  width: 60em;
+  margin-top: -3em; 
+  transition: all 0.3s ease; 
 }
 
-#containerFavs.expanded {
-  height: auto; /* Permite containerului să se ajusteze în funcție de conținut */
+#containerFavs.expanded , #containerContent.expanded{
+  height: auto; 
   width: 100%; 
-  margin-top: -5em; /* Urcă puțin mai mult când e deschis */
+  margin-top: -5em; 
 }
-/* #containerFavs {
-  height: auto;
-  margin-top: 1em;
-} */
+
 .main-title {
   margin-top: 1em;
   font-family: 'Quicksand', sans-serif;
@@ -189,12 +186,12 @@ export default {
   text-shadow: 0 2px 3px #af9b8f;
 }
 .cover-image {
-  display: block; /* Asigură că imaginea este tratată ca un element bloc */
-  margin: 1em auto; /* Centrează imaginea pe orizontală */
+  display: block; 
+  margin: 1em auto; 
   box-shadow: 0px 0px 20px 16px rgba(17, 17, 26, 0.18);
   border: #683312 dashed 5px;
-  width: 50%; /* Dimensiune mai mică */
-  height: auto; /* Păstrează proporțiile imaginii */
+  width: 50%;
+  height: auto; 
 }
 
 </style>

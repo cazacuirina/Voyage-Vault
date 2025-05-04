@@ -19,20 +19,16 @@
             {{ isFollowing ? 'Unfollow' : 'Follow' }}
           </v-btn>
           <v-icon
-            v-if="userEmail" 
+            v-if="userEmail && isPremium" 
             :color="isSubscribed ? 'green' : 'grey'"
             @click="handleSubscribe"
             class="cursor-pointer">
             {{ isSubscribed ? 'mdi-bell' : 'mdi-bell-off' }}
           </v-icon>
 
-          <!-- <v-btn icon @click="$emit('clearFilter')">
-            <v-icon>mdi-close</v-icon>
-            </v-btn> -->
         </v-col>
       </v-row>
 
-       <!-- Dialog pentru abonare -->
     <v-dialog v-model="showSubscriptionModal" max-width="400">
       <v-card>
         <v-card-title class="headline">Subscribe to {{ authorName }}</v-card-title>
@@ -84,6 +80,7 @@ export default {
       followers: 0,
       isFollowing: false,
       isSubscribed: false,
+      isPremium: false,
       subscriptionPrice: 0,
       showSubscriptionModal: false,
       showUnfollowModal: false,
@@ -104,13 +101,10 @@ export default {
    async handleFollow() {
   try {
     if (this.isFollowing) {
-      // Afișează dialogul de confirmare pentru unfollow & unsubscribe
       this.showUnfollowModal = true;
     } else {
-      // Dacă nu urmărește, atunci facem follow
       await this.authorFollowUnfollow();
       
-      // Dacă autorul are un preț pentru abonament, afișăm popup-ul de abonare
       if (this.subscriptionPrice && this.subscriptionPrice !== 0) {
         this.calculateBillingDate();
         this.showSubscriptionModal = true;
@@ -126,7 +120,6 @@ export default {
           this.showSubscriptionModal = true;
         } else {
           this.showUnfollowModal = true;
-          //console.log("You are already subscribed.");
         }
     },
     async subscribe() {
@@ -136,24 +129,16 @@ export default {
           {
             authorName: this.authorName,
             price: this.subscriptionPrice,
-            // userEmail: this.userEmail,
           },
           {
             headers: { Authorization: `Bearer ${this.token}` },
           }
         );
 
-        // Închide dialogul de abonare
         this.showSubscriptionModal = false;
 
-        // // Salvează informațiile în localStorage
-        // localStorage.setItem("userEmail", this.userEmail);
-        // localStorage.setItem("userName", this.userName);
-        // localStorage.setItem("token", this.token);
-
-        // Redirecționează către Stripe
         window.location.href = response.data.url;
-         // Salvează informațiile în localStorage
+
          localStorage.setItem("userEmail", this.userEmail);
         localStorage.setItem("userName", this.userName);
         localStorage.setItem("token", this.token);
@@ -163,8 +148,8 @@ export default {
     },
     calculateBillingDate() {
       const today = new Date();
-      today.setMonth(today.getMonth() + 1); // Următoarea plată este peste o lună
-      this.billingDate = today.toISOString().split("T")[0]; // Formatează data
+      today.setMonth(today.getMonth() + 1); 
+      this.billingDate = today.toISOString().split("T")[0];
     },
 
     async confirmUnfollowAndUnsubscribe() {
@@ -180,9 +165,9 @@ export default {
   async unsubscribe() {
     try {
       await axios.put(
-        `http://localhost:3001/users/${this.authorName}/unsubscribe`,
+        `http://localhost:3001/user/${this.authorName}/unsubscribe`,
         { 
-          //authorName: this.authorName 
+          
         },
         {
           headers: { Authorization: `Bearer ${this.token}` },
@@ -196,16 +181,14 @@ export default {
 
     async getAuthorPicture() {
       try {
-        const response = await axios.get(`http://localhost:3001/author/${this.authorName}`); 
-        //vezi daca e autentificat buton fllw
+        const response = await axios.get(`http://localhost:3001/user/${this.authorName}/profilePicture`); 
+        
         if (response.data.profilePicture) {
             this.authorPhoto = `data:image/jpg;base64,${response.data.profilePicture}`;
 
           console.log('Profile picture retrieved successfully' , this.authorPhoto);
         }
 
-        // this.followers = response.data.followers || 0;
-        // this.isFollowing = response.data.isFollowing || false;
       } catch (error) {
         console.error("Error fetching author details:", error);
       }
@@ -225,8 +208,11 @@ export default {
     },
     async getAuthorFollows() {
     try {
-      const response = await axios.get(`http://localhost:3001/author/${this.authorName}/followers`);
+      const response = await axios.get(`http://localhost:3001/user/${this.authorName}/followers`);
       this.followers = response.data.followers;
+      if(this.followers>=1000){
+        this.isPremium=true
+      }
       this.subscriptionPrice = response.data.subscriptionPrice; 
     } catch (error) {
       console.error("Error fetching followers count:", error);
@@ -244,7 +230,7 @@ export default {
     ); 
         this.isFollowing = response.data.isFollowing;
         this.followers += this.isFollowing ? 1 : -1;
-        // this.followers += 1;
+        
       } catch (error) {
         console.error("Error following/unfollowing user:", error);
       }
@@ -267,6 +253,6 @@ export default {
 }
 .followers {
   font-size: 16px;
-  color: #6d4c41; /* Maro */
+  color: #6d4c41; 
 }
 </style>
