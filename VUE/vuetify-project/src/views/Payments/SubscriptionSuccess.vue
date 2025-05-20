@@ -68,7 +68,7 @@
         isSubscription: true,
       };
 
-      await axios.post("http://localhost:3001/subscriber/payment", paymentData, {
+      await axios.post("http://localhost:3001/payments/subscriber", paymentData, {
         headers: { Authorization: `Bearer ${this.token}` },
       });
 
@@ -89,4 +89,38 @@
     justify-content: center;
     height: 80vh;
   }
+  .v-container {
+  background: linear-gradient(to bottom right, #e8f5e9, #c8e6c9); 
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.v-card {
+  background-color: #ffffff;
+  border-radius: 16px;
+  color: #2e7d32; 
+  max-width: 600px;
+  margin: auto;
+}
+
+h1 {
+  color: #2e7d32; 
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.text-h5 {
+  font-size: 18px;
+  color: #33691e; 
+}
+
+.v-btn {
+  font-weight: 600;
+  border-radius: 24px;
+  background-color: #66bb6a !important;
+  color: white !important;
+}
   </style>

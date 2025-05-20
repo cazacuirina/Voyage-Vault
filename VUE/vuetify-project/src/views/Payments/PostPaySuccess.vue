@@ -30,6 +30,7 @@ export default {
 
     if (this.userEmail && this.token && this.postTitle && this.authorName) {
       await this.savePostAccess(); 
+      await this.savePostPayment();
     }
   },
   computed: {
@@ -50,7 +51,7 @@ export default {
     async savePostPayment() {
       try {
         const response = await axios.post(
-          "http://localhost:3001/post/payment", 
+          "http://localhost:3001/payments/post", 
           {
             postTitle: this.postTitle,
             price: this.price,
@@ -93,4 +94,39 @@ export default {
   
 };
 </script>
+
+<style scoped>
+.v-container {
+  background: linear-gradient(to bottom right, #fff3e0, #ffe0b2);
+  min-height: 80vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.v-card {
+  background-color: #ffffff;
+  border-radius: 16px;
+  color: #4e342e; 
+  max-width: 600px;
+  margin: auto;
+}
+
+h1 {
+  color: #388e3c; 
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.text-h5 {
+  font-size: 18px;
+  color: #5d4037;
+}
+
+.v-btn {
+  font-weight: 600;
+  border-radius: 24px;
+}
+</style>
   

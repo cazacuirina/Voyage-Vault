@@ -8,8 +8,8 @@ const {
   createPostCheckout
 } = require('../controllers/payments');
 
-router.post('/subscriber/payment', checkAuthorization, saveSubscriptionPayment);
-router.post('/post/payment', checkAuthorization, savePostPayment);
+router.post('/subscriber', checkAuthorization, saveSubscriptionPayment);
+router.post('/post', checkAuthorization, savePostPayment);
 router.post('/stripe/create-checkout-session', checkAuthorization, createSubscriptionCheckout);
 router.post('/stripe/create-post-checkout-session', checkAuthorization, createPostCheckout);
 

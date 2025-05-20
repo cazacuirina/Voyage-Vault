@@ -10,6 +10,7 @@ const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/users");
 const postRoutes = require("./routes/posts");
 const paymentsRoutes = require('./routes/payments');
+const tripsRoutes = require("./routes/trips");
 
 const port = 3001;
 
@@ -31,6 +32,7 @@ app.use(passport.session());
 app.use("/auth", authRoutes);
 app.use("/user", userRoutes);
 app.use("/post", postRoutes);
+app.use("/trips", tripsRoutes);
 app.use("/payments", paymentsRoutes);
 
 app.listen(port, () => {

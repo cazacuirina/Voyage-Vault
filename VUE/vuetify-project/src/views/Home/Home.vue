@@ -9,7 +9,7 @@
 
       <v-row>
         <v-col>
-          <v-img v-if="!isAuthenticated" src="../assets/blogcover.jpg" class="cover-image" contain></v-img>
+          <v-img v-if="!isAuthenticated" src="../../assets/blogcover.jpg" class="cover-image" contain></v-img>
         </v-col>
       </v-row>
 
@@ -36,9 +36,8 @@
 </template>
 
 <script>
-import FavoriteList from '../components/FavoriteList.vue';
-import NewContent from '../components/NewContent.vue';
-import axios from 'axios';
+import FavoriteList from '../../components/Posts/FavoriteList.vue';
+import NewContent from '../../components/Posts/NewContent.vue';
 
 export default {
   components: { FavoriteList, NewContent },

@@ -107,6 +107,8 @@ exports.getPostStats = async (req, res) => {
           }
       });
 
+      postsStats.sort((a, b) => a.date - b.date);
+
       res.status(200).json(postsStats);
 
   } catch (error) {

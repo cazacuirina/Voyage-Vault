@@ -15,16 +15,26 @@
         </p>
         </v-col>
         <v-col cols="auto">
-          <v-btn v-if="userEmail && userName !== authorName" :color="isFollowing ? 'red' : 'primary'" @click="handleFollow">
+          <div class="action-buttons">
+          <v-btn
+            v-if="userEmail && userName !== authorName"
+            :color="isFollowing ? 'red' : 'primary'"
+            @click="handleFollow"
+            class="mb-2 follow-button"
+          >
             {{ isFollowing ? 'Unfollow' : 'Follow' }}
           </v-btn>
+
           <v-icon
-            v-if="userEmail && isPremium" 
+            v-if="userEmail && isPremium"
             :color="isSubscribed ? 'green' : 'grey'"
             @click="handleSubscribe"
-            class="cursor-pointer">
+            size="32"
+            class="subscribe-icon"
+          >
             {{ isSubscribed ? 'mdi-bell' : 'mdi-bell-off' }}
           </v-icon>
+        </div>
 
         </v-col>
       </v-row>
@@ -125,7 +135,7 @@ export default {
     async subscribe() {
       try {
         const response = await axios.post(
-          "http://localhost:3001/stripe/create-checkout-session",
+          "http://localhost:3001/payments/stripe/create-checkout-session",
           {
             authorName: this.authorName,
             price: this.subscriptionPrice,
@@ -244,7 +254,7 @@ export default {
   padding: 16px;
   margin-bottom: 20px;
   text-align: center;
-  background-color: #fbe3c4; /* Beige */
+  background-color: #fbe3c4; 
   border-radius: 12px;
 }
 .author-name {
@@ -255,4 +265,22 @@ export default {
   font-size: 16px;
   color: #6d4c41; 
 }
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px; 
+}
+
+.subscribe-icon {
+  cursor: pointer;
+  font-size: 28px;
+}
+
+.follow-button{
+  border-radius: 24px;
+  font-weight: 700;
+  text-transform: none;
+}
+
 </style>

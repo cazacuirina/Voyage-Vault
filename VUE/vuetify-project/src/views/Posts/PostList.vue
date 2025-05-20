@@ -55,7 +55,9 @@
     </v-row>
   </v-container>
 
-  <AuthorProfile v-if="selectedAuthor" :authorName="selectedAuthor" />
+  <v-container class="mt-10">
+    <AuthorProfile v-if="selectedAuthor" :authorName="selectedAuthor" />
+  </v-container>
 
     <v-row class="post-container">
       <v-col v-for="post in filteredPosts" :key="post.id" cols="12" md="6" lg="4">
@@ -147,8 +149,8 @@
 
 <script>
 import axios from 'axios'
-import Post from '../components/Post.vue'
-import AuthorProfile from "../components/AuthorProfile.vue";
+import Post from '../../components/Posts/Post.vue'
+import AuthorProfile from "../../components/Users/AuthorProfile.vue";
 
 export default {
 components:{
@@ -322,9 +324,9 @@ methods: {
     },
     async buyPost() {
       try {
-
+        console.log(this.buyPostId, this.buyPostPrice )
         const response = await axios.post(
-          "http://localhost:3001/stripe/create-post-checkout-session", 
+          "http://localhost:3001/payments/stripe/create-post-checkout-session", 
           {
             postId: this.buyPostId,
             postTitle: this.buyPostTitle,

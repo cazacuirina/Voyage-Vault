@@ -245,7 +245,7 @@ export default {
       if (!confirm("Are you sure you want to delete this trip?")) return;
 
       try {
-        const response = await axios.delete(`http://localhost:3001/user/trips/${trip.id}`, {
+        const response = await axios.delete(`http://localhost:3001/trips/${trip.id}`, {
           headers: {
             Authorization: `Bearer ${this.token}`,
           },
@@ -263,7 +263,7 @@ export default {
     },
 
     async getTrips(){
-      const response = await axios.get('http://localhost:3001/user/trips', {
+      const response = await axios.get('http://localhost:3001/trips', {
       headers: {
         Authorization: `Bearer ${this.token}`,
       },
@@ -305,7 +305,7 @@ export default {
         if (this.isEditing && this.trip?.id) {
           console.log(this.trip)
           response = await axios.put(
-            `http://localhost:3001/user/trips/${this.trip.id}`,
+            `http://localhost:3001/trips/${this.trip.id}`,
             tripData,
             {
               headers: {
@@ -325,7 +325,7 @@ export default {
           }
         } else {
           response = await axios.post(
-            `http://localhost:3001/user/trip`,
+            `http://localhost:3001/trips`,
             tripData,
             {
               headers: {

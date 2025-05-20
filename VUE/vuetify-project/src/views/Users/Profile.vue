@@ -108,7 +108,7 @@
       </v-list>
     </v-navigation-drawer>
 
-    <v-container class="charts" fluid dense >
+    <v-container v-if="isPremium" class="charts" fluid dense >
   <v-row dense>
     <v-col cols="12" md="6">
       <v-card class="mx-2 my-2 pa-2 chart">
@@ -151,6 +151,15 @@
       </v-card>
     </v-col>
   </v-row>
+</v-container>
+<v-container v-else class="pa-0 ma-0 noncharts">
+  <v-card class="mx-2 pa-4 text-center premium-info" elevation="1">
+    <v-card-text>
+      <strong>Premium users</strong> can view detailed charts and statistics about their followers, posts, and income.  
+      <br /><br />
+      <span class="text-grey">Gain popularity and reach 1000 followers to unlock premium features!</span>
+    </v-card-text>
+  </v-card>
 </v-container>
   </template>
   
@@ -243,9 +252,6 @@
       this.token = localStorage.getItem('token')
       this.getProfilePicture();
       this.getAuthorFollows();
-      this.getUserFinancials();
-      this.getPostsStats();
-      this.getPayersPerPost();
     },
     methods: {
       async getPayersPerPost() {
@@ -300,6 +306,7 @@
 
     stats.forEach(post => {
       const postDate = new Date(post.date);  
+      console.log(postDate)
       const formattedDate = `${postDate.getDate().toString().padStart(2, '0')} ${this.months[postDate.getMonth()]}`; // Formatarea datei în formatul 'dd Mmm'
 
       likes.push(post.likes || 0);  
@@ -477,6 +484,11 @@
       this.subscribers = response.data.subscribers;
       if(this.followers>=1000){
         this.isPremium=true
+        
+          this.getUserFinancials();
+          this.getPostsStats();
+          this.getPayersPerPost();
+        
       }
     } catch (error) {
       console.error("Error fetching followers count:", error);
@@ -576,6 +588,11 @@
   </script>
   
   <style scoped>
+  html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
     h1 {
       color: #683312; 
       font-family: 'Quicksand', sans-serif;
@@ -647,6 +664,7 @@
   .charts{
     background: linear-gradient(to bottom, #f5e8dd, #a5492a);
     min-height: 100vh;
+    min-width: 100%;
   }
   .chart{
     height: 320px; 
@@ -658,4 +676,24 @@
   .hidden-input{
     display: none;
   }
+  .noncharts{
+    background: linear-gradient(to bottom, #f5e8dd, #a5492a);
+    min-height: 100vh;
+    min-width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .premium-info {
+  background-color: #fffaf4;
+  border: 2px dashed #c28c68;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  color: #5c3d24;
+  font-family: 'Handlee', cursive;
+  font-size: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease-in-out;
+}
   </style>
