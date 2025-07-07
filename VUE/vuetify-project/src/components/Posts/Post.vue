@@ -89,7 +89,7 @@
         </v-card-text>
 
         <v-card-actions>
-          <v-btn id="submit" @click="submit">Send</v-btn>
+          <v-btn id="submit" @click="submitPostForm">Send</v-btn>
           <v-btn id="close" @click="isActive = false">Close</v-btn>
         </v-card-actions>
       </v-card>
@@ -171,7 +171,7 @@ export default {
   methods: {
     async getIsPremium() {
     try {
-      const response = await axios.get(`http://localhost:3001/user/${this.userName}/followers`);
+      const response = await axios.get(`http://localhost:5000/user/${this.userName}/followers`);
       if(response.data.followers>=1000) {
         this.isPremiumUser=true
       }
@@ -260,7 +260,7 @@ export default {
       this.isEditing = true
     },
 
-    async submit() {
+    async submitPostForm() {
       try {
         await this.$refs.form.validate()  
         if (this.valid) {
@@ -282,13 +282,13 @@ export default {
         postData.images = this.post.images.map(image => 
         image.replace(/^data:image\/\w+;base64,/, "")); 
         console.log("LUNG", postData.images.length)    
-        console.log(postData.images) //am luat ce e aici si am bagat in base64 decoder online si e ok!
+        console.log(postData.images) 
       } else {
         console.warn("No images to send.");
       }
       
           if(this.isEditing){   
-            const response = await axios.put(`http://localhost:3001/post/${this.post.id}`, postData, {
+            const response = await axios.put(`http://localhost:5000/post/${this.post.id}`, postData, {
               headers: {
                 Authorization: `Bearer ${localStorage.getItem('token')}`,
               },
@@ -299,7 +299,7 @@ export default {
             console.log(this.post)
 
           }else{  
-            const response = await axios.post('http://localhost:3001/post', postData, {
+            const response = await axios.post('http://localhost:5000/post', postData, {
               headers: {
                 Authorization: `Bearer ${localStorage.getItem('token')}`
               },

@@ -1,5 +1,63 @@
 const { db , bucket, admin} = require("../database/database");
 const uuid = require('uuid-v4');
+const { spawn } = require('child_process');
+
+
+exports.getPersonalizedFeed = async (req, res) => {
+  try {
+    const email = req.userEmail;
+
+    const userSnap = await db.collection("users").where("email", "==", email).limit(1).get();
+    if (userSnap.empty) return res.status(404).send({ error: "User not found" });
+
+    const user = userSnap.docs[0].data();
+    const favoriteIds = (user.favoritePosts || []).map(fav => fav.postId);
+
+    const allPostsSnap = await db.collection("posts").get();
+    const allPosts = [];
+    allPostsSnap.forEach(doc => {
+      const post = doc.data();
+      post.id = doc.id;
+      allPosts.push(post);
+    });
+
+    const favoritePosts = allPosts.filter(p => favoriteIds.includes(p.id));
+
+    const inputData = {
+      allPosts,
+      favoritePosts
+    };
+
+    const python = spawn('python', ['py_script/recommender.py']);
+    let result = '';
+
+    python.stdout.on('data', (data) => {
+      result += data.toString();
+    });
+
+    python.stderr.on('data', (data) => {
+      console.error("Python error:", data.toString());
+    });
+
+    python.on('close', (code) => {
+      try {
+        const recommendations = JSON.parse(result);
+        res.status(200).send(recommendations);
+      } catch (e) {
+        res.status(500).send({ error: "Failed to parse recommendations" });
+      }
+    });
+
+    // console.log("Input sent to Python:", JSON.stringify(inputData, null, 2));
+    python.stdin.write(JSON.stringify(inputData));
+    python.stdin.end();
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: "Internal Server Error" });
+  }
+};
+
 
 exports.getAllPosts = async (req, res) => {
     try{

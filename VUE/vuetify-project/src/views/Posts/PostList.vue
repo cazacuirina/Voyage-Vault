@@ -287,7 +287,7 @@ methods: {
     }
     {
       const response = await axios.get(
-          `http://localhost:3001/user/${post.author}/following`,
+          `http://localhost:5000/user/${post.author}/following`,
           {
             headers: {
               Authorization: `Bearer ${this.token}`,
@@ -326,7 +326,7 @@ methods: {
       try {
         console.log(this.buyPostId, this.buyPostPrice )
         const response = await axios.post(
-          "http://localhost:3001/payments/stripe/create-post-checkout-session", 
+          "http://localhost:5000/payments/stripe/create-post-checkout-session", 
           {
             postId: this.buyPostId,
             postTitle: this.buyPostTitle,
@@ -354,33 +354,6 @@ methods: {
       }
     },
 
-    async payPost() {
-  try {
-   
-    const response = await axios.post(
-      "http://localhost:3001/stripe/create-post-checkout-session",
-      {
-        postId: this.postId,  
-        price: this.postPrice, 
-        authorName: this.postAuthor, 
-      },
-      {
-        headers: { Authorization: `Bearer ${this.token}` }, 
-      }
-    );
-
-    this.showPaymentModal = false;
-
-    window.location.href = response.data.url;
-
-    localStorage.setItem("userEmail", this.userEmail);
-    localStorage.setItem("userName", this.userName);
-    localStorage.setItem("token", this.token);
-  } catch (error) {
-    console.error("Error creating Stripe session for post:", error);
-  }
-},
-
   filterByAuthor(author) {
     this.selectedAuthor = author
     this.currentPage = 1
@@ -407,43 +380,52 @@ methods: {
   },
 
   async getAllPosts() {
-    try {
-      const response = await axios.get('http://localhost:3001/post/posts')
+    try { 
+      let response=[]
+      if(!this.token){
+       response = await axios.get('http://localhost:5000/post/posts')
+       this.posts = response.data
+      }else{
+        response = await axios.get('http://localhost:5000/post/posts/feed', {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        }) 
       this.posts = response.data
-      if(this.token){
-       await this.favoritePosts()    
+      // await this.favoritePosts()    
       }
+      
       this.stopLoadingProgress()     
       console.log(response)
     } catch (error) {
       console.error('Error fetching posts:', error)
     }
   },
-  async favoritePosts() {
-    try {
-      const response = await axios.get('http://localhost:3001/user/favorites', {
-          headers: {
-            Authorization: `Bearer ${this.token}`,
-          },
-        })  
+  // async favoritePosts() {
+  //   try {
+  //     const response = await axios.get('http://localhost:5000/user/favorites', {
+  //         headers: {
+  //           Authorization: `Bearer ${this.token}`,
+  //         },
+  //       })  
       
-        const favoriteList = response.data.travelList || []
-        console.log(favoriteList)
-        this.posts.forEach(post => {
-          post.liked = favoriteList.some(favorite => favorite.postId === post.id)  
-          console.log(post.liked)
-        })
+  //       const favoriteList = response.data.travelList || []
+  //       console.log(favoriteList)
+  //       this.posts.forEach(post => {
+  //         post.liked = favoriteList.some(favorite => favorite.postId === post.id)  
+  //         console.log(post.liked)
+  //       })
 
-      } catch (error) {
-        console.error('Error fetching favoriteList ', error)
-      }
-  },
+  //     } catch (error) {
+  //       console.error('Error fetching favoriteList ', error)
+  //     }
+  // },
 
   async openEditDialog(post) {
     try {
     this.$refs.postform.openEditForm({ ...post, images: [] });
 
-    const response = await axios.get(`http://localhost:3001/post/${post.id}/images`, {
+    const response = await axios.get(`http://localhost:5000/post/${post.id}/images`, {
       headers: {
         'Cache-Control': 'no-cache',
       },
@@ -479,7 +461,7 @@ methods: {
         Authorization: `Bearer ${this.token}`,
       },
     }
-    const response = await axios.put(`http://localhost:3001/post/${postId}/like`, null, config)  
+    const response = await axios.put(`http://localhost:5000/post/${postId}/like`, null, config)  
 
     const postIndex = this.posts.findIndex(post => post.id === postId)  
     if (postIndex !== -1) {
@@ -509,7 +491,7 @@ async confirmDelete() {
           Authorization: `Bearer ${this.token}`,
         },
       }
-      await axios.delete(`http://localhost:3001/post/${postId}`, config)  
+      await axios.delete(`http://localhost:5000/post/${postId}`, config)  
 
       this.posts = this.posts.filter(post => post.id !== postId)    
     } catch (error) {

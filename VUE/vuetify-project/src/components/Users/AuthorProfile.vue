@@ -135,7 +135,7 @@ export default {
     async subscribe() {
       try {
         const response = await axios.post(
-          "http://localhost:3001/payments/stripe/create-checkout-session",
+          "http://localhost:5000/payments/stripe/create-checkout-session",
           {
             authorName: this.authorName,
             price: this.subscriptionPrice,
@@ -175,7 +175,7 @@ export default {
   async unsubscribe() {
     try {
       await axios.put(
-        `http://localhost:3001/user/${this.authorName}/unsubscribe`,
+        `http://localhost:5000/user/${this.authorName}/unsubscribe`,
         { 
           
         },
@@ -191,7 +191,7 @@ export default {
 
     async getAuthorPicture() {
       try {
-        const response = await axios.get(`http://localhost:3001/user/${this.authorName}/profilePicture`); 
+        const response = await axios.get(`http://localhost:5000/user/${this.authorName}/profilePicture`); 
         
         if (response.data.profilePicture) {
             this.authorPhoto = `data:image/jpg;base64,${response.data.profilePicture}`;
@@ -206,7 +206,7 @@ export default {
     async getIsFollowing() {
       
       try {
-        const response = await axios.get(`http://localhost:3001/user/${this.authorName}/following`, {
+        const response = await axios.get(`http://localhost:5000/user/${this.authorName}/following`, {
           headers: { Authorization: `Bearer ${this.token}` }
         });
         console.log(response.data)
@@ -218,7 +218,7 @@ export default {
     },
     async getAuthorFollows() {
     try {
-      const response = await axios.get(`http://localhost:3001/user/${this.authorName}/followers`);
+      const response = await axios.get(`http://localhost:5000/user/${this.authorName}/followers`);
       this.followers = response.data.followers;
       if(this.followers>=1000){
         this.isPremium=true
@@ -230,7 +230,7 @@ export default {
   },
     async authorFollowUnfollow() {
       try {
-        const response = await axios.put(`http://localhost:3001/user/${this.authorName}/follow`, 
+        const response = await axios.put(`http://localhost:5000/user/${this.authorName}/follow`, 
       {}, 
       {
         headers: {

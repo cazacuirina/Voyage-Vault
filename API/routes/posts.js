@@ -5,6 +5,7 @@ const commentsRoutes = require('./comments');
 
 const {
   getAllPosts,
+  getPersonalizedFeed,
   getPostByTitle,
   getPostDetails,
   getPostStats,
@@ -18,6 +19,7 @@ const {
 } = require("../controllers/posts");
 
 router.get("/posts", getAllPosts);
+router.get("/posts/feed", checkAuthorization, getPersonalizedFeed);
 router.get("/stats", checkAuthorization, getPostStats);
 router.get("/:postTitle", getPostByTitle);
 router.get("/:postId/details", getPostDetails);

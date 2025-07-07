@@ -69,7 +69,7 @@ export default {
   methods: {
     async getFavoriteList() {
       try {
-        const response = await axios.get('http://localhost:3001/user/favorites', {
+        const response = await axios.get('http://localhost:5000/user/favorites', {
           headers: {
             Authorization: `Bearer ${this.token}`,
           },
@@ -95,7 +95,7 @@ export default {
       const favorite = this.favoriteList[index]  
       console.log(favorite)
       try {
-        const response = await axios.get(`http://localhost:3001/post/${favorite.postId}/details`) 
+        const response = await axios.get(`http://localhost:5000/post/${favorite.postId}/details`) 
         this.favoriteList[index].details = response.data  
 
       } catch (error) {

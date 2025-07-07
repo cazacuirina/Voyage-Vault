@@ -79,7 +79,7 @@
         async getNewContent() {
       this.loadingPosts = true;
       try {
-        const response = await axios.get("http://localhost:3001/user/newContent", {
+        const response = await axios.get("http://localhost:5000/user/newContent", {
           headers: {
             Authorization: `Bearer ${this.token}`
           },

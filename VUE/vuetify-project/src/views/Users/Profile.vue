@@ -256,7 +256,7 @@
     methods: {
       async getPayersPerPost() {
         try {
-          const response = await axios.get("http://localhost:3001/user/payersperpost", {
+          const response = await axios.get("http://localhost:5000/user/payersperpost", {
             headers: {
               Authorization: `Bearer ${this.token}`
             }
@@ -283,7 +283,7 @@
 
       async getPostsStats() {
         try {
-          const response = await axios.get("http://localhost:3001/post/stats", {
+          const response = await axios.get("http://localhost:5000/post/stats", {
             headers: {
               Authorization: `Bearer ${this.token}`
             }
@@ -393,7 +393,7 @@
 
       async getUserFinancials() {
         try {
-          const response = await axios.get("http://localhost:3001/user/financials", {
+          const response = await axios.get("http://localhost:5000/user/financials", {
             headers: {
               Authorization: `Bearer ${this.token}`
             }
@@ -478,7 +478,7 @@
       },
     async getAuthorFollows() {
     try {
-      const response = await axios.get(`http://localhost:3001/user/${this.userName}/followers`);
+      const response = await axios.get(`http://localhost:5000/user/${this.userName}/followers`);
       this.followers = response.data.followers; 
       this.subscriptionPrice = response.data.subscriptionPrice;
       this.subscribers = response.data.subscribers;
@@ -496,7 +496,7 @@
   },
       async getProfilePicture() {
       try {
-          const response = await axios.get(`http://localhost:3001/user/${this.userName}/profilePicture`, {
+          const response = await axios.get(`http://localhost:5000/user/${this.userName}/profilePicture`, {
           headers: {
             'Authorization': `Bearer ${this.token}`,
           },
@@ -513,7 +513,7 @@
     async saveSubscriptionPrice() {
       try {
         console.log(this.subscriptionPrice)
-        const response = await axios.put('http://localhost:3001/user/subscription',  { subscriptionPrice: this.subscriptionPrice }, 
+        const response = await axios.put('http://localhost:5000/user/subscription',  { subscriptionPrice: this.subscriptionPrice }, 
           { headers: { Authorization: `Bearer ${this.token}` } }
         );
         console.log(response.data.message)
@@ -569,7 +569,7 @@
           photo: this.userPhoto.split(',')[1]
         };
         console.log(profileData)
-        const response = await axios.post('http://localhost:3001/user/profilePicture', profileData, {
+        const response = await axios.post('http://localhost:5000/user/profilePicture', profileData, {
           headers: {
             'Content-Type': 'application/json', 
             'Authorization': `Bearer ${this.token}`,

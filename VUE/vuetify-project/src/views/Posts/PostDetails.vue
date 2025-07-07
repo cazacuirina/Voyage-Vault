@@ -239,7 +239,7 @@ export default {
   methods: {
     async getPost() {
     try {
-        const postResponse = await axios.get(`http://localhost:3001/post/${this.postTitle}`, {
+        const postResponse = await axios.get(`http://localhost:5000/post/${this.postTitle}`, {
             headers: {
                 'Cache-Control': 'no-cache',
             },
@@ -267,7 +267,7 @@ async submitRating() {
         const postId = this.post.id
       
         console.log(this.post.rating)
-        const response = await axios.put(`http://localhost:3001/post/${postId}/rate`, {
+        const response = await axios.put(`http://localhost:5000/post/${postId}/rate`, {
           rating: this.userRating,
         }, {
           headers: {
@@ -286,7 +286,7 @@ async submitRating() {
     },
 async getComments() {
     try {
-        const commentsResponse = await axios.get(`http://localhost:3001/post/${this.post.id}/comments`, {
+        const commentsResponse = await axios.get(`http://localhost:5000/post/${this.post.id}/comments`, {
             headers: {
                 'Cache-Control': 'no-cache',
             },
@@ -305,7 +305,7 @@ async getReplies(comment) {
     try {
       if (!comment.replies) {
        
-        const response = await axios.get(`http://localhost:3001/post/${this.post.id}/comments/${comment.id}/replies`, {
+        const response = await axios.get(`http://localhost:5000/post/${this.post.id}/comments/${comment.id}/replies`, {
           headers: {
             Authorization: `Bearer ${this.token}`,
           },
@@ -321,7 +321,7 @@ async getReplies(comment) {
 async getPostImages() {
   try {
 
-    const response = await axios.get(`http://localhost:3001/post/${this.post.id}/images`, {
+    const response = await axios.get(`http://localhost:5000/post/${this.post.id}/images`, {
       headers: {
         'Cache-Control': 'no-cache',  
       },
@@ -345,7 +345,7 @@ async getPostImages() {
 
         if (this.replyTo) {
       const response = await axios.post(
-        `http://localhost:3001/post/${this.post.id}/comments/${this.replyTo.id}/replies`,
+        `http://localhost:5000/post/${this.post.id}/comments/${this.replyTo.id}/replies`,
         this.comment,
         {
           headers: {
@@ -373,7 +373,7 @@ async getPostImages() {
 
       this.replyTo = null;
       } else if(this.editing){
-          await axios.put(`http://localhost:3001/post/${this.post.id}/comments/${this.comment.id}`,this.comment, {
+          await axios.put(`http://localhost:5000/post/${this.post.id}/comments/${this.comment.id}`,this.comment, {
           headers: {
             Authorization: `Bearer ${this.token}`,
           },
@@ -388,7 +388,7 @@ async getPostImages() {
 
         }else{
 
-          const response = await axios.post(`http://localhost:3001/post/${this.post.id}/comments`, this.comment, {
+          const response = await axios.post(`http://localhost:5000/post/${this.post.id}/comments`, this.comment, {
               headers: {
                 Authorization: `Bearer ${this.token}`,
               },
@@ -413,7 +413,7 @@ async getPostImages() {
 
     async deleteComment(commentId){
       try {
-        await axios.delete(`http://localhost:3001/post/${this.post.id}/comments/${commentId}`, {
+        await axios.delete(`http://localhost:5000/post/${this.post.id}/comments/${commentId}`, {
           headers: {
             Authorization: `Bearer ${this.token}`,
           },

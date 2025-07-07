@@ -15,7 +15,6 @@ var chance = new Chance()
 const bcrypt = require('bcrypt')
 const saltRounds = 10
 
-// Generate User
 function generateRandomUser() {
   return {
     name: chance.name(),
@@ -24,9 +23,8 @@ function generateRandomUser() {
   }
 }
 
-// Generate Post
 function generateRandomPost(users) {
-  const randomUser = chance.pickone(users)  // select random user from list
+  const randomUser = chance.pickone(users)  
 
   return {
     title: chance.sentence({ words: 3 }),
@@ -40,25 +38,25 @@ function generateRandomPost(users) {
   }
 }
 
-// Generate post Comments
+
 function generateRandomComment(users) {
-  const randomUser = chance.pickone(users)  // select random user from list
+  const randomUser = chance.pickone(users)  
   return{
     userName: randomUser.name,
     comment: chance.paragraph({ sentences: 2 })
   }
 }
 
-// Add Users to db collection
+
 async function populateUsersCollection() {
   try {
     let users = []
     const userPromises = []
 
-    for (let i = 0; i < 5; i++) {   // -> 10
+    for (let i = 0; i < 5; i++) {   
       const randomUser = generateRandomUser()
 
-      const promise = new Promise((resolve, reject) => {  // wait for user to be saved in db (async operation)
+      const promise = new Promise((resolve, reject) => {  
         bcrypt.hash(randomUser.password, saltRounds, async function (err, hash) {
           if (err) {
             reject(err)
@@ -66,9 +64,9 @@ async function populateUsersCollection() {
           }
 
           randomUser.password = hash
-          const userRef = await db.collection('users').add(randomUser)  // save user to db
+          const userRef = await db.collection('users').add(randomUser)  
           randomUser.id = userRef.id
-          users.push(randomUser)  // add user to the list
+          users.push(randomUser)  
           console.log('Added document with ID:', randomUser.id)
           resolve()
         });
@@ -77,7 +75,7 @@ async function populateUsersCollection() {
       userPromises.push(promise)
     }
 
-    await Promise.all(userPromises)  // wait for all promises to be resolved
+    await Promise.all(userPromises) 
 
     console.log('Users collection populated successfully.')
     console.log(users)
@@ -88,35 +86,34 @@ async function populateUsersCollection() {
   }
 }
 
-// Add Posts and Comments to db collection
+
 async function populatePostCollection(users) {
   try {
     const postPromises = []
 
-    for (let i = 0; i < 10; i++) { // -> 20
+    for (let i = 0; i < 10; i++) { 
       const randomPost = generateRandomPost(users)
-      const postRef = await db.collection('posts').add(randomPost)  // save post to db
+      const postRef = await db.collection('posts').add(randomPost)  
       randomPost.id = postRef.id
 
-      const numComments = chance.integer({ min: 0, max: 7 }) //10
+      const numComments = chance.integer({ min: 0, max: 7 }) 
 
       const commentPromises = []
 
       for (let j = 0; j < numComments; j++) {
         const randomComment = generateRandomComment(users)
-        const commentPromise = db.collection('posts').doc(postRef.id).collection('comments').add(randomComment) // save comment to subcollection
-        commentPromises.push(commentPromise)  // first, add comments to the post
+        const commentPromise = db.collection('posts').doc(postRef.id).collection('comments').add(randomComment) 
+        commentPromises.push(commentPromise)  
       }
 
       const comments = await Promise.all(commentPromises)
       console.log(`${randomPost.id} - comments added: ${comments.length}`)
 
-      postPromises.push(randomPost)  // then, add post with comments to list
+      postPromises.push(randomPost)  
       randomPost.comments = comments  
     }
 
-    const posts = await Promise.all(postPromises)   // wait for all promises to be resolved
-
+    const posts = await Promise.all(postPromises)   
     console.log('Posts collection populated successfully:', posts)
   } catch (error) {
     console.error('Error populating posts collection:', error)
@@ -125,9 +122,9 @@ async function populatePostCollection(users) {
 
 
 
-populateUsersCollection()     // create users collection
+populateUsersCollection()    
     .then(users => {
-      populatePostCollection(users)  // create posts collection + comments subcolection
+      populatePostCollection(users)  
     })
     .catch(error => {
       console.error('Error:', error)

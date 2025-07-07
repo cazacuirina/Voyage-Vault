@@ -224,7 +224,7 @@
       }
 
       try {
-        const response = await this.axios.put("http://localhost:3001/auth/reset-password", {
+        const response = await this.axios.put("http://localhost:5000/auth/reset-password", {
           email: this.email,
           newPassword: this.newPassword,
         });
@@ -244,14 +244,13 @@
     if (this.valid) {
       this.error = false;
 
-      // Verifică dacă parolele sunt diferite și valide
       if (this.newPassword !== this.confirmPassword) {
         this.error = true;
         this.errorMessage = "Passwords do not match.";
         return;
       }
 
-      const response = await axios.put("http://localhost:3001/auth/reset-password", {
+      const response = await axios.put("http://localhost:5000/auth/reset-password", {
         email: this.email,
         newPassword: this.newPassword
       });
@@ -261,7 +260,7 @@
         this.resetMode = false;
         this.newPassword = "";
         this.confirmPassword = "";
-        this.password = ""; // în caz că ai și un câmp de login activ
+        this.password = ""; 
         this.error = false;
       } else {
         this.error = true;
@@ -283,7 +282,7 @@
         if (this.valid) {
           this.error = false
         
-          const response = await axios.post('http://localhost:3001/auth/login', {
+          const response = await axios.post('http://localhost:5000/auth/login', {
             email: this.email,
             password: this.password,
           })
@@ -314,7 +313,7 @@
 
     async loginWithGoogle() {
   try {
-    window.location.href = 'http://localhost:3001/auth/google';
+    window.location.href = 'http://localhost:5000/auth/google';
   } catch (error) {
     console.error("Error during Google login:", error);
   }

@@ -51,7 +51,7 @@ export default {
     async savePostPayment() {
       try {
         const response = await axios.post(
-          "http://localhost:3001/payments/post", 
+          "http://localhost:5000/payments/post", 
           {
             postTitle: this.postTitle,
             price: this.price,
@@ -74,7 +74,7 @@ export default {
     async savePostAccess() {
     try {
       const response = await axios.put(
-        `http://localhost:3001/post/${this.postTitle}/access`, 
+        `http://localhost:5000/post/${this.postTitle}/access`, 
         {},
         {
           headers: {

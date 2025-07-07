@@ -48,7 +48,7 @@
       try {
         console.log(this.authorName, this.userName)
         const response = await axios.put(
-          `http://localhost:3001/user/${this.authorName}/subscribe`,
+          `http://localhost:5000/user/${this.authorName}/subscribe`,
           {},
           {
             headers: { Authorization: `Bearer ${this.token}` },
@@ -68,7 +68,7 @@
         isSubscription: true,
       };
 
-      await axios.post("http://localhost:3001/payments/subscriber", paymentData, {
+      await axios.post("http://localhost:5000/payments/subscriber", paymentData, {
         headers: { Authorization: `Bearer ${this.token}` },
       });
 

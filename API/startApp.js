@@ -12,7 +12,8 @@ const postRoutes = require("./routes/posts");
 const paymentsRoutes = require('./routes/payments');
 const tripsRoutes = require("./routes/trips");
 
-const port = 3001;
+// const port = 3001;
+const port = 5000;
 
 app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 app.use(logger("dev"));
